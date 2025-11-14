@@ -1,10 +1,17 @@
 require('dotenv').config();
 const express = require('express');
+const cors = require('cors'); // Add CORS middleware
 const stockRoutes = require('./src/routes/stockRoutes');
 const cryptoRoutes = require('./src/routes/cryptoRoutes');
 const errorHandler = require('./src/utils/errorHandler');
 
 const app = express();
+
+// Add CORS middleware to allow requests from the frontend
+app.use(cors({
+  origin: ['http://localhost:8080', 'http://localhost:8081', 'http://localhost:8082', 'http://localhost:8083', 'http://localhost:8084', 'http://localhost:8085', 'http://localhost:8086', 'http://localhost:8087', 'http://localhost:8088'], // Allow all frontend ports
+  credentials: true
+}));
 
 app.use(express.json());
 

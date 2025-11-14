@@ -20,27 +20,79 @@ async function getCryptoPrice(req, res, next) {
       });
     }
     
-    const data = await coinGeckoService.getCryptoPrice(cryptoId);
+    // Try to get market data first for more complete information
+    let marketData = [];
+    try {
+      marketData = await coinGeckoService.getCryptoMarketData(cryptoId);
+      console.log('Market data fetched, length:', marketData.length);
+    } catch (marketError) {
+      console.log('Could not fetch market data, falling back to price data only:', marketError.message);
+    }
+    
+    // Get price data
+    const priceData = await coinGeckoService.getCryptoPrice(cryptoId);
+    console.log('Price data fetched, keys:', Object.keys(priceData).length);
     
     // Check if we got data for the requested crypto
-    if (!data || Object.keys(data).length === 0) {
+    if ((!priceData || Object.keys(priceData).length === 0) && 
+        (!marketData || marketData.length === 0)) {
       return res.status(404).json({
         success: false,
         message: `No data found for cryptocurrency: ${cryptoId}`
       });
     }
     
-    // Format the response for a single crypto
-    const cryptoKeys = Object.keys(data);
+    // TEMPORARY: Always try to use market data first, then fall back
+    console.log('Trying market data approach');
+    if (marketData && marketData.length > 0) {
+      console.log('Using market data for response');
+      const cryptoInfo = marketData[0];
+      const response = {
+        symbol: cryptoInfo.symbol || cryptoId,
+        name: cryptoInfo.name || cryptoId,
+        usd: cryptoInfo.current_price || 0,
+        inr: null, // We don't fetch INR in market data
+        usd_24h_change: cryptoInfo.price_change_percentage_24h || 0,
+        usd_24h_vol: cryptoInfo.total_volume || 0,
+        usd_market_cap: cryptoInfo.market_cap || 0,
+        lastUpdated: new Date().toISOString()
+      };
+      
+      // If multiple cryptos were requested, include all in the response
+      if (marketData.length > 1) {
+        response.prices = {};
+        marketData.forEach(item => {
+          response.prices[item.id] = {
+            symbol: item.symbol,
+            name: item.name,
+            usd: item.current_price,
+            usd_24h_change: item.price_change_percentage_24h,
+            usd_24h_vol: item.total_volume,
+            usd_market_cap: item.market_cap
+          };
+        });
+      }
+      
+      console.log('Sending market data response');
+      return res.json(response);
+    }
+    
+    // Fallback to simple price data if market data is not available
+    console.log('Using price data for response');
+    const cryptoKeys = Object.keys(priceData);
     const firstCrypto = cryptoKeys[0];
     
     // If multiple cryptos were requested, return the first one
-    const cryptoData = data[firstCrypto];
+    const cryptoData = priceData[firstCrypto];
     
     const response = {
       symbol: firstCrypto,
+      name: firstCrypto, // We don't have the name from simple price endpoint
       usd: cryptoData.usd || null,
       inr: cryptoData.inr || null,
+      usd_24h_change: 0, // Not available from simple price endpoint
+      usd_24h_vol: 0, // Not available from simple price endpoint
+      usd_market_cap: 0, // Not available from simple price endpoint
       lastUpdated: new Date().toISOString()
     };
     
@@ -49,12 +101,18 @@ async function getCryptoPrice(req, res, next) {
       response.prices = {};
       cryptoKeys.forEach(key => {
         response.prices[key] = {
-          usd: data[key].usd || null,
-          inr: data[key].inr || null
+          symbol: key,
+          name: key,
+          usd: priceData[key].usd || null,
+          inr: priceData[key].inr || null,
+          usd_24h_change: 0,
+          usd_24h_vol: 0,
+          usd_market_cap: 0
         };
       });
     }
     
+    console.log('Sending price data response');
     res.json(response);
   } catch (error) {
     // Handle specific error cases

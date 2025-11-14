@@ -42,6 +42,25 @@ async function getStockQuote(req, res, next) {
     
     const quote = await alphaVantageService.getQuote(symbol);
     
+    // Log the quote response for debugging
+    console.log('Alpha Vantage response for', symbol, ':', quote);
+    
+    // Check for API errors in the response
+    if (quote['Error Message']) {
+      return res.status(400).json({
+        success: false,
+        message: quote['Error Message']
+      });
+    }
+    
+    if (quote['Information']) {
+      return res.status(400).json({
+        success: false,
+        message: quote['Information']
+      });
+    }
+    
+    // Check if we have valid quote data (either from API or mock)
     if (!quote || Object.keys(quote).length === 0) {
       return res.status(404).json({
         success: false,
@@ -51,13 +70,14 @@ async function getStockQuote(req, res, next) {
     
     const formattedQuote = {
       symbol: quote['01. symbol'],
+      name: quote['01. symbol'], // Add name field for consistency
       open: parseFloat(quote['02. open']),
       high: parseFloat(quote['03. high']),
       low: parseFloat(quote['04. low']),
       price: parseFloat(quote['05. price']),
       volume: parseInt(quote['06. volume']),
       change: parseFloat(quote['09. change']),
-      changePercent: quote['10. change percent'].replace('%', '')
+      changePercent: quote['10. change percent'] ? quote['10. change percent'].replace('%', '') : '0'
     };
     
     res.json({
@@ -65,6 +85,7 @@ async function getStockQuote(req, res, next) {
       data: formattedQuote
     });
   } catch (error) {
+    console.error('Error fetching stock quote:', error);
     next(error);
   }
 }

@@ -1,7 +1,9 @@
 const axios = require('axios');
 const cache = require('../utils/cache');
 
-const BASE_URL = 'https://api.coingecko.com/api/v3/simple/price';
+const BASE_URL = 'https://api.coingecko.com/api/v3';
+const PRICE_ENDPOINT = '/simple/price';
+const MARKET_ENDPOINT = '/coins/markets';
 const API_KEY = process.env.COINGECKO_API_KEY || 'CG-pRDPVpeWdMwCsj7bHkqDeSg3';
 
 async function getCryptoPrice(ids, currencies = 'usd,inr') {
@@ -13,13 +15,11 @@ async function getCryptoPrice(ids, currencies = 'usd,inr') {
   }
   
   try {
-    const response = await axios.get(BASE_URL, {
+    const response = await axios.get(BASE_URL + PRICE_ENDPOINT, {
       params: {
         ids: ids,
-        vs_currencies: currencies
-      },
-      headers: {
-        'Authorization': `Bearer ${API_KEY}`
+        vs_currencies: currencies,
+        x_cg_demo_api_key: API_KEY
       }
     });
     
@@ -28,28 +28,41 @@ async function getCryptoPrice(ids, currencies = 'usd,inr') {
     cache.set(cacheKey, result, 60);
     return result;
   } catch (error) {
-    // If there's an API key error, try without the header
-    if (error.response && error.response.status === 401) {
-      try {
-        const response = await axios.get(BASE_URL, {
-          params: {
-            ids: ids,
-            vs_currencies: currencies
-          }
-        });
-        
-        const result = response.data || {};
-        // Cache for 60 seconds (1 minute)
-        cache.set(cacheKey, result, 60);
-        return result;
-      } catch (retryError) {
-        throw retryError;
+    throw error;
+  }
+}
+
+async function getCryptoMarketData(ids, currency = 'usd') {
+  const cacheKey = `crypto_market_${ids}_${currency}`;
+  const cachedResult = cache.get(cacheKey);
+  
+  if (cachedResult) {
+    return cachedResult;
+  }
+  
+  try {
+    const response = await axios.get(BASE_URL + MARKET_ENDPOINT, {
+      params: {
+        vs_currency: currency,
+        ids: ids,
+        order: 'market_cap_desc',
+        per_page: 10,
+        page: 1,
+        sparkline: false,
+        x_cg_demo_api_key: API_KEY
       }
-    }
+    });
+    
+    const result = response.data || [];
+    // Cache for 60 seconds (1 minute)
+    cache.set(cacheKey, result, 60);
+    return result;
+  } catch (error) {
     throw error;
   }
 }
 
 module.exports = {
-  getCryptoPrice
+  getCryptoPrice,
+  getCryptoMarketData
 };
