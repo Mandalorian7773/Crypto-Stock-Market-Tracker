@@ -8,14 +8,6 @@ import { useNavigate } from 'react-router-dom';
 import axiosInstance from '@/lib/axios';
 import { useToast } from '@/hooks/use-toast';
 import { useStore } from '@/store/useStore';
-import { auth } from '@/lib/firebase';
-import { 
-  signInWithEmailAndPassword, 
-  signOut, 
-  signInAnonymously, 
-  createUserWithEmailAndPassword,
-  sendPasswordResetEmail
-} from 'firebase/auth';
 
 export const Header = () => {
   const location = useLocation();
@@ -24,10 +16,6 @@ export const Header = () => {
   const userId = useStore((state) => state.userId);
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [authMode, setAuthMode] = useState<'signin' | 'signup' | 'reset'>('signin');
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -82,127 +70,6 @@ export const Header = () => {
     }
   };
 
-  const handleSignIn = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
-      toast({ title: 'Signed in successfully' });
-      setUserMenuOpen(false);
-      setEmail('');
-      setPassword('');
-      setAuthMode('signin');
-    } catch (error: any) {
-      console.error('Sign in error:', error);
-      let errorMessage = 'Failed to sign in';
-      
-      switch (error.code) {
-        case 'auth/user-not-found':
-          errorMessage = 'No account found with this email';
-          break;
-        case 'auth/wrong-password':
-          errorMessage = 'Incorrect password';
-          break;
-        case 'auth/invalid-email':
-          errorMessage = 'Invalid email address';
-          break;
-        case 'auth/user-disabled':
-          errorMessage = 'This account has been disabled';
-          break;
-        default:
-          errorMessage = error.message || 'Failed to sign in';
-      }
-      
-      toast({ 
-        title: 'Sign in failed', 
-        description: errorMessage,
-        variant: 'destructive'
-      });
-    }
-  };
-
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      await createUserWithEmailAndPassword(auth, email, password);
-      toast({ title: 'Account created successfully' });
-      setUserMenuOpen(false);
-      setEmail('');
-      setPassword('');
-      setAuthMode('signin');
-    } catch (error: any) {
-      console.error('Sign up error:', error);
-      let errorMessage = 'Failed to create account';
-      
-      switch (error.code) {
-        case 'auth/email-already-in-use':
-          errorMessage = 'An account already exists with this email';
-          break;
-        case 'auth/invalid-email':
-          errorMessage = 'Invalid email address';
-          break;
-        case 'auth/weak-password':
-          errorMessage = 'Password should be at least 6 characters';
-          break;
-        default:
-          errorMessage = error.message || 'Failed to create account';
-      }
-      
-      toast({ 
-        title: 'Sign up failed', 
-        description: errorMessage,
-        variant: 'destructive'
-      });
-    }
-  };
-
-  const handlePasswordReset = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      await sendPasswordResetEmail(auth, email);
-      toast({ 
-        title: 'Password reset email sent', 
-        description: 'Check your email for password reset instructions' 
-      });
-      setAuthMode('signin');
-    } catch (error: any) {
-      console.error('Password reset error:', error);
-      let errorMessage = 'Failed to send password reset email';
-      
-      switch (error.code) {
-        case 'auth/user-not-found':
-          errorMessage = 'No account found with this email';
-          break;
-        case 'auth/invalid-email':
-          errorMessage = 'Invalid email address';
-          break;
-        default:
-          errorMessage = error.message || 'Failed to send password reset email';
-      }
-      
-      toast({ 
-        title: 'Password reset failed', 
-        description: errorMessage,
-        variant: 'destructive'
-      });
-    }
-  };
-
-  const handleSignOut = async () => {
-    try {
-      await signOut(auth);
-      // Sign in anonymously after signing out
-      await signInAnonymously(auth);
-      toast({ title: 'Signed out successfully' });
-      setUserMenuOpen(false);
-    } catch (error: any) {
-      toast({ 
-        title: 'Sign out failed', 
-        description: error.message || 'Failed to sign out',
-        variant: 'destructive'
-      });
-    }
-  };
-
   const navItems = [
     { path: '/', label: 'Dashboard' },
     { path: '/portfolio', label: 'Portfolio' },
@@ -253,143 +120,12 @@ export const Header = () => {
               </Link>
             ))}
             
-            {/* User Menu */}
-            <div className="relative">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setUserMenuOpen(!userMenuOpen)}
-                className="rounded-full"
-              >
-                <User className="h-5 w-5" />
-              </Button>
-              
-              {userMenuOpen && (
-                <div className="absolute right-0 mt-2 w-64 glass border border-white/10 rounded-lg shadow-lg z-50">
-                  <div className="p-4">
-                    <div className="mb-4">
-                      <p className="text-sm text-muted-foreground">User ID</p>
-                      <p className="font-mono text-sm truncate">{userId}</p>
-                    </div>
-                    
-                    {userId && !userId.startsWith('dev-') && !userId.startsWith('anonymous') ? (
-                      <Button 
-                        onClick={handleSignOut}
-                        variant="outline" 
-                        className="w-full"
-                      >
-                        Sign Out
-                      </Button>
-                    ) : (
-                      <div className="space-y-3">
-                        {authMode === 'signin' && (
-                          <>
-                            <div className="space-y-2">
-                              <Input
-                                type="email"
-                                placeholder="Email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                className="glass border-white/10"
-                              />
-                              <Input
-                                type="password"
-                                placeholder="Password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                className="glass border-white/10"
-                              />
-                            </div>
-                            <Button 
-                              onClick={handleSignIn}
-                              className="w-full"
-                            >
-                              Sign In
-                            </Button>
-                            <div className="flex justify-between text-xs">
-                              <button 
-                                onClick={() => setAuthMode('signup')}
-                                className="text-primary hover:underline"
-                              >
-                                Create Account
-                              </button>
-                              <button 
-                                onClick={() => setAuthMode('reset')}
-                                className="text-primary hover:underline"
-                              >
-                                Forgot Password?
-                              </button>
-                            </div>
-                          </>
-                        )}
-                        
-                        {authMode === 'signup' && (
-                          <>
-                            <div className="space-y-2">
-                              <Input
-                                type="email"
-                                placeholder="Email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                className="glass border-white/10"
-                              />
-                              <Input
-                                type="password"
-                                placeholder="Password (6+ characters)"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                className="glass border-white/10"
-                              />
-                            </div>
-                            <Button 
-                              onClick={handleSignUp}
-                              className="w-full"
-                            >
-                              Sign Up
-                            </Button>
-                            <button 
-                              onClick={() => setAuthMode('signin')}
-                              className="text-xs text-primary hover:underline w-full"
-                            >
-                              Already have an account? Sign In
-                            </button>
-                          </>
-                        )}
-                        
-                        {authMode === 'reset' && (
-                          <>
-                            <div className="space-y-2">
-                              <Input
-                                type="email"
-                                placeholder="Email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                className="glass border-white/10"
-                              />
-                            </div>
-                            <Button 
-                              onClick={handlePasswordReset}
-                              className="w-full"
-                            >
-                              Reset Password
-                            </Button>
-                            <button 
-                              onClick={() => setAuthMode('signin')}
-                              className="text-xs text-primary hover:underline w-full"
-                            >
-                              Back to Sign In
-                            </button>
-                          </>
-                        )}
-                        
-                        <p className="text-xs text-muted-foreground text-center">
-                          Currently signed in anonymously
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
+            {/* User Info Display */}
+            <div className="flex items-center gap-2 px-3 py-2 glass border border-white/10 rounded-lg">
+              <User className="h-4 w-4 text-muted-foreground" />
+              <span className="text-xs font-mono truncate max-w-24">
+                {userId}
+              </span>
             </div>
           </div>
 
@@ -434,128 +170,14 @@ export const Header = () => {
                 </Link>
               ))}
               
-              {/* Mobile User Menu */}
+              {/* Mobile User Info */}
               <div className="pt-2 border-t border-white/10">
-                <div className="mb-2">
-                  <p className="text-sm text-muted-foreground">User ID</p>
-                  <p className="font-mono text-sm truncate">{userId}</p>
+                <div className="flex items-center gap-2 px-3 py-2 glass border border-white/10 rounded-lg">
+                  <User className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-xs font-mono truncate">
+                    {userId}
+                  </span>
                 </div>
-                
-                {userId && !userId.startsWith('dev-') && !userId.startsWith('anonymous') ? (
-                  <Button 
-                    onClick={handleSignOut}
-                    variant="outline" 
-                    className="w-full"
-                  >
-                    Sign Out
-                  </Button>
-                ) : (
-                  <div className="space-y-3">
-                    {authMode === 'signin' && (
-                      <>
-                        <div className="space-y-2">
-                          <Input
-                            type="email"
-                            placeholder="Email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            className="glass border-white/10"
-                          />
-                          <Input
-                            type="password"
-                            placeholder="Password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            className="glass border-white/10"
-                          />
-                        </div>
-                        <Button 
-                          onClick={handleSignIn}
-                          className="w-full"
-                        >
-                          Sign In
-                        </Button>
-                        <div className="flex justify-between text-xs">
-                          <button 
-                            onClick={() => setAuthMode('signup')}
-                            className="text-primary hover:underline"
-                          >
-                            Create Account
-                          </button>
-                          <button 
-                            onClick={() => setAuthMode('reset')}
-                            className="text-primary hover:underline"
-                          >
-                            Forgot Password?
-                          </button>
-                        </div>
-                      </>
-                    )}
-                    
-                    {authMode === 'signup' && (
-                      <>
-                        <div className="space-y-2">
-                          <Input
-                            type="email"
-                            placeholder="Email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            className="glass border-white/10"
-                          />
-                          <Input
-                            type="password"
-                            placeholder="Password (6+ characters)"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            className="glass border-white/10"
-                          />
-                        </div>
-                        <Button 
-                          onClick={handleSignUp}
-                          className="w-full"
-                        >
-                          Sign Up
-                        </Button>
-                        <button 
-                          onClick={() => setAuthMode('signin')}
-                          className="text-xs text-primary hover:underline w-full"
-                        >
-                          Already have an account? Sign In
-                        </button>
-                      </>
-                    )}
-                    
-                    {authMode === 'reset' && (
-                      <>
-                        <div className="space-y-2">
-                          <Input
-                            type="email"
-                            placeholder="Email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            className="glass border-white/10"
-                          />
-                        </div>
-                        <Button 
-                          onClick={handlePasswordReset}
-                          className="w-full"
-                        >
-                          Reset Password
-                        </Button>
-                        <button 
-                          onClick={() => setAuthMode('signin')}
-                          className="text-xs text-primary hover:underline w-full"
-                        >
-                          Back to Sign In
-                        </button>
-                      </>
-                    )}
-                    
-                    <p className="text-xs text-muted-foreground text-center">
-                      Currently signed in anonymously
-                    </p>
-                  </div>
-                )}
               </div>
             </nav>
           </div>
