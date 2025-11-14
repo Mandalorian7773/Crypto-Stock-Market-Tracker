@@ -9,7 +9,13 @@ import axiosInstance from '@/lib/axios';
 import { useToast } from '@/hooks/use-toast';
 import { useStore } from '@/store/useStore';
 import { auth } from '@/lib/firebase';
-import { signInWithEmailAndPassword, signOut, signInAnonymously } from 'firebase/auth';
+import { 
+  signInWithEmailAndPassword, 
+  signOut, 
+  signInAnonymously, 
+  createUserWithEmailAndPassword,
+  sendPasswordResetEmail
+} from 'firebase/auth';
 
 export const Header = () => {
   const location = useLocation();
@@ -21,6 +27,7 @@ export const Header = () => {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [authMode, setAuthMode] = useState<'signin' | 'signup' | 'reset'>('signin');
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -83,10 +90,98 @@ export const Header = () => {
       setUserMenuOpen(false);
       setEmail('');
       setPassword('');
+      setAuthMode('signin');
     } catch (error: any) {
+      console.error('Sign in error:', error);
+      let errorMessage = 'Failed to sign in';
+      
+      switch (error.code) {
+        case 'auth/user-not-found':
+          errorMessage = 'No account found with this email';
+          break;
+        case 'auth/wrong-password':
+          errorMessage = 'Incorrect password';
+          break;
+        case 'auth/invalid-email':
+          errorMessage = 'Invalid email address';
+          break;
+        case 'auth/user-disabled':
+          errorMessage = 'This account has been disabled';
+          break;
+        default:
+          errorMessage = error.message || 'Failed to sign in';
+      }
+      
       toast({ 
         title: 'Sign in failed', 
-        description: error.message || 'Failed to sign in',
+        description: errorMessage,
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await createUserWithEmailAndPassword(auth, email, password);
+      toast({ title: 'Account created successfully' });
+      setUserMenuOpen(false);
+      setEmail('');
+      setPassword('');
+      setAuthMode('signin');
+    } catch (error: any) {
+      console.error('Sign up error:', error);
+      let errorMessage = 'Failed to create account';
+      
+      switch (error.code) {
+        case 'auth/email-already-in-use':
+          errorMessage = 'An account already exists with this email';
+          break;
+        case 'auth/invalid-email':
+          errorMessage = 'Invalid email address';
+          break;
+        case 'auth/weak-password':
+          errorMessage = 'Password should be at least 6 characters';
+          break;
+        default:
+          errorMessage = error.message || 'Failed to create account';
+      }
+      
+      toast({ 
+        title: 'Sign up failed', 
+        description: errorMessage,
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handlePasswordReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await sendPasswordResetEmail(auth, email);
+      toast({ 
+        title: 'Password reset email sent', 
+        description: 'Check your email for password reset instructions' 
+      });
+      setAuthMode('signin');
+    } catch (error: any) {
+      console.error('Password reset error:', error);
+      let errorMessage = 'Failed to send password reset email';
+      
+      switch (error.code) {
+        case 'auth/user-not-found':
+          errorMessage = 'No account found with this email';
+          break;
+        case 'auth/invalid-email':
+          errorMessage = 'Invalid email address';
+          break;
+        default:
+          errorMessage = error.message || 'Failed to send password reset email';
+      }
+      
+      toast({ 
+        title: 'Password reset failed', 
+        description: errorMessage,
         variant: 'destructive'
       });
     }
@@ -177,7 +272,7 @@ export const Header = () => {
                       <p className="font-mono text-sm truncate">{userId}</p>
                     </div>
                     
-                    {userId && !userId.startsWith('dev-') ? (
+                    {userId && !userId.startsWith('dev-') && !userId.startsWith('anonymous') ? (
                       <Button 
                         onClick={handleSignOut}
                         variant="outline" 
@@ -187,28 +282,106 @@ export const Header = () => {
                       </Button>
                     ) : (
                       <div className="space-y-3">
-                        <div className="space-y-2">
-                          <Input
-                            type="email"
-                            placeholder="Email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            className="glass border-white/10"
-                          />
-                          <Input
-                            type="password"
-                            placeholder="Password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            className="glass border-white/10"
-                          />
-                        </div>
-                        <Button 
-                          onClick={handleSignIn}
-                          className="w-full"
-                        >
-                          Sign In
-                        </Button>
+                        {authMode === 'signin' && (
+                          <>
+                            <div className="space-y-2">
+                              <Input
+                                type="email"
+                                placeholder="Email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                className="glass border-white/10"
+                              />
+                              <Input
+                                type="password"
+                                placeholder="Password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                className="glass border-white/10"
+                              />
+                            </div>
+                            <Button 
+                              onClick={handleSignIn}
+                              className="w-full"
+                            >
+                              Sign In
+                            </Button>
+                            <div className="flex justify-between text-xs">
+                              <button 
+                                onClick={() => setAuthMode('signup')}
+                                className="text-primary hover:underline"
+                              >
+                                Create Account
+                              </button>
+                              <button 
+                                onClick={() => setAuthMode('reset')}
+                                className="text-primary hover:underline"
+                              >
+                                Forgot Password?
+                              </button>
+                            </div>
+                          </>
+                        )}
+                        
+                        {authMode === 'signup' && (
+                          <>
+                            <div className="space-y-2">
+                              <Input
+                                type="email"
+                                placeholder="Email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                className="glass border-white/10"
+                              />
+                              <Input
+                                type="password"
+                                placeholder="Password (6+ characters)"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                className="glass border-white/10"
+                              />
+                            </div>
+                            <Button 
+                              onClick={handleSignUp}
+                              className="w-full"
+                            >
+                              Sign Up
+                            </Button>
+                            <button 
+                              onClick={() => setAuthMode('signin')}
+                              className="text-xs text-primary hover:underline w-full"
+                            >
+                              Already have an account? Sign In
+                            </button>
+                          </>
+                        )}
+                        
+                        {authMode === 'reset' && (
+                          <>
+                            <div className="space-y-2">
+                              <Input
+                                type="email"
+                                placeholder="Email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                className="glass border-white/10"
+                              />
+                            </div>
+                            <Button 
+                              onClick={handlePasswordReset}
+                              className="w-full"
+                            >
+                              Reset Password
+                            </Button>
+                            <button 
+                              onClick={() => setAuthMode('signin')}
+                              className="text-xs text-primary hover:underline w-full"
+                            >
+                              Back to Sign In
+                            </button>
+                          </>
+                        )}
+                        
                         <p className="text-xs text-muted-foreground text-center">
                           Currently signed in anonymously
                         </p>
@@ -268,7 +441,7 @@ export const Header = () => {
                   <p className="font-mono text-sm truncate">{userId}</p>
                 </div>
                 
-                {userId && !userId.startsWith('dev-') ? (
+                {userId && !userId.startsWith('dev-') && !userId.startsWith('anonymous') ? (
                   <Button 
                     onClick={handleSignOut}
                     variant="outline" 
@@ -278,28 +451,106 @@ export const Header = () => {
                   </Button>
                 ) : (
                   <div className="space-y-3">
-                    <div className="space-y-2">
-                      <Input
-                        type="email"
-                        placeholder="Email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="glass border-white/10"
-                      />
-                      <Input
-                        type="password"
-                        placeholder="Password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="glass border-white/10"
-                      />
-                    </div>
-                    <Button 
-                      onClick={handleSignIn}
-                      className="w-full"
-                    >
-                      Sign In
-                    </Button>
+                    {authMode === 'signin' && (
+                      <>
+                        <div className="space-y-2">
+                          <Input
+                            type="email"
+                            placeholder="Email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            className="glass border-white/10"
+                          />
+                          <Input
+                            type="password"
+                            placeholder="Password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="glass border-white/10"
+                          />
+                        </div>
+                        <Button 
+                          onClick={handleSignIn}
+                          className="w-full"
+                        >
+                          Sign In
+                        </Button>
+                        <div className="flex justify-between text-xs">
+                          <button 
+                            onClick={() => setAuthMode('signup')}
+                            className="text-primary hover:underline"
+                          >
+                            Create Account
+                          </button>
+                          <button 
+                            onClick={() => setAuthMode('reset')}
+                            className="text-primary hover:underline"
+                          >
+                            Forgot Password?
+                          </button>
+                        </div>
+                      </>
+                    )}
+                    
+                    {authMode === 'signup' && (
+                      <>
+                        <div className="space-y-2">
+                          <Input
+                            type="email"
+                            placeholder="Email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            className="glass border-white/10"
+                          />
+                          <Input
+                            type="password"
+                            placeholder="Password (6+ characters)"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="glass border-white/10"
+                          />
+                        </div>
+                        <Button 
+                          onClick={handleSignUp}
+                          className="w-full"
+                        >
+                          Sign Up
+                        </Button>
+                        <button 
+                          onClick={() => setAuthMode('signin')}
+                          className="text-xs text-primary hover:underline w-full"
+                        >
+                          Already have an account? Sign In
+                        </button>
+                      </>
+                    )}
+                    
+                    {authMode === 'reset' && (
+                      <>
+                        <div className="space-y-2">
+                          <Input
+                            type="email"
+                            placeholder="Email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            className="glass border-white/10"
+                          />
+                        </div>
+                        <Button 
+                          onClick={handlePasswordReset}
+                          className="w-full"
+                        >
+                          Reset Password
+                        </Button>
+                        <button 
+                          onClick={() => setAuthMode('signin')}
+                          className="text-xs text-primary hover:underline w-full"
+                        >
+                          Back to Sign In
+                        </button>
+                      </>
+                    )}
+                    
                     <p className="text-xs text-muted-foreground text-center">
                       Currently signed in anonymously
                     </p>
