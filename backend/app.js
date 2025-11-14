@@ -9,7 +9,18 @@ const app = express();
 
 // Add CORS middleware to allow requests from the frontend
 app.use(cors({
-  origin: ['http://localhost:8080', 'http://localhost:8081', 'http://localhost:8082', 'http://localhost:8083', 'http://localhost:8084', 'http://localhost:8085', 'http://localhost:8086', 'http://localhost:8087', 'http://localhost:8088'], // Allow all frontend ports
+  origin: [
+    'http://localhost:8080', 
+    'http://localhost:8081', 
+    'http://localhost:8082', 
+    'http://localhost:8083', 
+    'http://localhost:8084', 
+    'http://localhost:8085', 
+    'http://localhost:8086', 
+    'http://localhost:8087', 
+    'http://localhost:8088',
+    'https://crypto-stock-market-tracker.vercel.app' // Add Vercel frontend URL
+  ], // Allow all frontend ports and Vercel deployment
   credentials: true
 }));
 
