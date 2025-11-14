@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { TrendingUp, Search, Menu, X } from 'lucide-react';
+import { TrendingUp, Search, Menu, X, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { motion } from 'framer-motion';
@@ -7,13 +7,20 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '@/lib/axios';
 import { useToast } from '@/hooks/use-toast';
+import { useStore } from '@/store/useStore';
+import { auth } from '@/lib/firebase';
+import { signInWithEmailAndPassword, signOut, signInAnonymously } from 'firebase/auth';
 
 export const Header = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const userId = useStore((state) => state.userId);
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -68,6 +75,39 @@ export const Header = () => {
     }
   };
 
+  const handleSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      toast({ title: 'Signed in successfully' });
+      setUserMenuOpen(false);
+      setEmail('');
+      setPassword('');
+    } catch (error: any) {
+      toast({ 
+        title: 'Sign in failed', 
+        description: error.message || 'Failed to sign in',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth);
+      // Sign in anonymously after signing out
+      await signInAnonymously(auth);
+      toast({ title: 'Signed out successfully' });
+      setUserMenuOpen(false);
+    } catch (error: any) {
+      toast({ 
+        title: 'Sign out failed', 
+        description: error.message || 'Failed to sign out',
+        variant: 'destructive'
+      });
+    }
+  };
+
   const navItems = [
     { path: '/', label: 'Dashboard' },
     { path: '/portfolio', label: 'Portfolio' },
@@ -117,6 +157,67 @@ export const Header = () => {
                 </Button>
               </Link>
             ))}
+            
+            {/* User Menu */}
+            <div className="relative">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setUserMenuOpen(!userMenuOpen)}
+                className="rounded-full"
+              >
+                <User className="h-5 w-5" />
+              </Button>
+              
+              {userMenuOpen && (
+                <div className="absolute right-0 mt-2 w-64 glass border border-white/10 rounded-lg shadow-lg z-50">
+                  <div className="p-4">
+                    <div className="mb-4">
+                      <p className="text-sm text-muted-foreground">User ID</p>
+                      <p className="font-mono text-sm truncate">{userId}</p>
+                    </div>
+                    
+                    {userId && !userId.startsWith('dev-') ? (
+                      <Button 
+                        onClick={handleSignOut}
+                        variant="outline" 
+                        className="w-full"
+                      >
+                        Sign Out
+                      </Button>
+                    ) : (
+                      <div className="space-y-3">
+                        <div className="space-y-2">
+                          <Input
+                            type="email"
+                            placeholder="Email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            className="glass border-white/10"
+                          />
+                          <Input
+                            type="password"
+                            placeholder="Password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="glass border-white/10"
+                          />
+                        </div>
+                        <Button 
+                          onClick={handleSignIn}
+                          className="w-full"
+                        >
+                          Sign In
+                        </Button>
+                        <p className="text-xs text-muted-foreground text-center">
+                          Currently signed in anonymously
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="flex md:hidden items-center gap-2">
@@ -159,6 +260,52 @@ export const Header = () => {
                   </Button>
                 </Link>
               ))}
+              
+              {/* Mobile User Menu */}
+              <div className="pt-2 border-t border-white/10">
+                <div className="mb-2">
+                  <p className="text-sm text-muted-foreground">User ID</p>
+                  <p className="font-mono text-sm truncate">{userId}</p>
+                </div>
+                
+                {userId && !userId.startsWith('dev-') ? (
+                  <Button 
+                    onClick={handleSignOut}
+                    variant="outline" 
+                    className="w-full"
+                  >
+                    Sign Out
+                  </Button>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="space-y-2">
+                      <Input
+                        type="email"
+                        placeholder="Email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="glass border-white/10"
+                      />
+                      <Input
+                        type="password"
+                        placeholder="Password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="glass border-white/10"
+                      />
+                    </div>
+                    <Button 
+                      onClick={handleSignIn}
+                      className="w-full"
+                    >
+                      Sign In
+                    </Button>
+                    <p className="text-xs text-muted-foreground text-center">
+                      Currently signed in anonymously
+                    </p>
+                  </div>
+                )}
+              </div>
             </nav>
           </div>
         )}
