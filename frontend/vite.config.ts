@@ -15,4 +15,28 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  // Production build optimizations
+  build: {
+    outDir: "dist",
+    assetsDir: "assets",
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          charts: ['plotly.js', 'react-plotly.js'],
+          firebase: ['firebase/app', 'firebase/auth'],
+          utils: ['axios', '@tanstack/react-query']
+        }
+      }
+    },
+    // Enable gzip compression
+    brotliSize: true,
+    chunkSizeWarningLimit: 5000 // Increase limit due to Plotly.js size
+  },
+  // Enable gzip compression for production
+  preview: {
+    port: 8080,
+    host: '::'
+  }
 }));
