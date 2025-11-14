@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { useStore } from '@/store/useStore';
 
 const axiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5001',
@@ -10,9 +11,8 @@ const axiosInstance = axios.create({
 
 // Add a request interceptor to handle user ID
 axiosInstance.interceptors.request.use((config) => {
-  // In a real app, we would get this from the store
-  // For now, we'll use a default value
-  const userId = 'dev-user-id';
+  const state = useStore.getState();
+  const userId = state.userId || 'dev-user-id';
   if (userId) {
     config.headers['x-user-id'] = userId;
   }
