@@ -18,7 +18,6 @@ export default function Watchlist() {
       const results = await Promise.all(
         watchlist.map(async (symbol) => {
           try {
-    
             const cryptoRes = await axios.get(
               `https://api.coingecko.com/api/v3/coins/markets`,
               {
@@ -31,7 +30,6 @@ export default function Watchlist() {
             if (cryptoRes.data.length > 0) {
               const crypto = cryptoRes.data[0];
               
-              // Then get price from our backend API
               const priceRes = await axiosInstance.get(`/api/crypto/price?cryptoId=${symbol.toLowerCase()}`);
               
               return {
@@ -64,7 +62,7 @@ export default function Watchlist() {
 
       return results.filter((r) => r !== null);
     },
-    refetchInterval: 60000, // Reduced frequency to avoid rate limiting
+    refetchInterval: 60000,
     enabled: watchlist.length > 0,
   });
 
@@ -75,20 +73,20 @@ export default function Watchlist() {
         animate={{ opacity: 1, y: 0 }}
         className="mb-8"
       >
-        <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+        <h1 className="text-3xl sm:text-4xl font-bold mb-2 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
           Watchlist
         </h1>
         <p className="text-muted-foreground">Monitor your favorite assets</p>
       </motion.div>
 
       {watchlist.length === 0 ? (
-        <Card className="glass p-12 text-center border-white/10">
+        <Card className="glass p-8 sm:p-12 text-center border-white/10">
           <p className="text-muted-foreground">
             Your watchlist is empty. Add assets from the asset details page!
           </p>
         </Card>
       ) : isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           {Array.from({ length: watchlist.length }).map((_, i) => (
             <Skeleton key={i} className="h-[160px] glass" />
           ))}
@@ -97,7 +95,7 @@ export default function Watchlist() {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+          className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4"
         >
           {assets?.map((asset: any) => (
             <AssetCard

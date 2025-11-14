@@ -34,7 +34,7 @@ export const PortfolioItemCard = ({
       <Card className="glass p-4 border-white/10">
         <div className="flex items-start justify-between mb-4">
           <div>
-            <h3 className="text-xl font-bold">{symbol}</h3>
+            <h3 className="text-lg sm:text-xl font-bold">{symbol}</h3>
             <p className="text-sm text-muted-foreground">
               {quantity} shares @ ${buyPrice.toFixed(2)}
             </p>
@@ -52,16 +52,16 @@ export const PortfolioItemCard = ({
         <div className="grid grid-cols-2 gap-4">
           <div>
             <p className="text-xs text-muted-foreground">Current Price</p>
-            <p className="text-lg font-semibold">${currentPrice.toFixed(2)}</p>
+            <p className="text-base sm:text-lg font-semibold">${currentPrice.toFixed(2)}</p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Total Value</p>
-            <p className="text-lg font-semibold">${totalValue.toFixed(2)}</p>
+            <p className="text-base sm:text-lg font-semibold">${totalValue.toFixed(2)}</p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">P&L</p>
             <p
-              className={`text-lg font-semibold ${
+              className={`text-base sm:text-lg font-semibold ${
                 isProfit ? 'text-success' : 'text-destructive'
               }`}
             >
@@ -71,7 +71,7 @@ export const PortfolioItemCard = ({
           <div>
             <p className="text-xs text-muted-foreground">ROI</p>
             <p
-              className={`text-lg font-semibold ${
+              className={`text-base sm:text-lg font-semibold ${
                 isProfit ? 'text-success' : 'text-destructive'
               }`}
             >

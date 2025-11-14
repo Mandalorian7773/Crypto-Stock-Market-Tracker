@@ -5,6 +5,7 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
+  base: "/", // Set base to root for Netlify deployment
   server: {
     host: "::",
     port: 8080,
@@ -38,5 +39,9 @@ export default defineConfig(({ mode }) => ({
   preview: {
     port: 8080,
     host: '::'
+  },
+  // Ensure proper MIME types for deployment
+  define: {
+    global: 'globalThis',
   }
 }));

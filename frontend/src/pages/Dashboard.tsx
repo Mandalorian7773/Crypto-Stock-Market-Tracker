@@ -9,7 +9,6 @@ export default function Dashboard() {
   const { data: cryptoData, isLoading: cryptoLoading } = useQuery({
     queryKey: ['crypto-list'],
     queryFn: async () => {
-      // First get top crypto IDs from CoinGecko
       const topCryptosResponse = await axios.get(
         'https://api.coingecko.com/api/v3/coins/markets',
         {
@@ -25,16 +24,14 @@ export default function Dashboard() {
       
       const topCryptoIds = topCryptosResponse.data.map((crypto: any) => crypto.id).join(',');
       
-      // Then get prices from our backend API
       const pricesResponse = await axiosInstance.get(`/api/crypto/price?cryptoId=${topCryptoIds}`);
       
-      // Combine the data
       return topCryptosResponse.data.map((crypto: any) => ({
         ...crypto,
         current_price: pricesResponse.data.prices?.[crypto.id]?.usd || crypto.current_price,
       }));
     },
-    refetchInterval: 60000, // Reduced frequency to avoid rate limiting
+    refetchInterval: 60000,
     staleTime: 30000,
   });
 
@@ -48,7 +45,7 @@ export default function Dashboard() {
       const responses = await Promise.all(requests);
       return responses.map((r) => r.data);
     },
-    refetchInterval: 60000, // Reduced frequency to avoid rate limiting
+    refetchInterval: 60000,
     staleTime: 30000,
   });
 
@@ -89,7 +86,7 @@ export default function Dashboard() {
             variants={container}
             initial="hidden"
             animate="show"
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4"
           >
             {cryptoLoading ? (
               Array.from({ length: 8 }).map((_, i) => (
@@ -117,7 +114,7 @@ export default function Dashboard() {
             variants={container}
             initial="hidden"
             animate="show"
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4"
           >
             {stockLoading ? (
               Array.from({ length: 6 }).map((_, i) => (
