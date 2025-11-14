@@ -1,177 +1,93 @@
 const coinGeckoService = require('../services/coinGeckoService');
-const { calculateSMA, calculateEMA, calculateROI } = require('../utils/analytics');
 
-async function getTopCryptos(req, res, next) {
+async function getCryptoPrice(req, res, next) {
   try {
-    const { limit = 10 } = req.query;
-    const cryptos = await coinGeckoService.getTopCryptos(parseInt(limit));
+    const { cryptoId } = req.query;
     
-    const formattedCryptos = cryptos.map(crypto => ({
-      id: crypto.id,
-      symbol: crypto.symbol,
-      name: crypto.name,
-      image: crypto.image,
-      current_price: crypto.current_price,
-      market_cap: crypto.market_cap,
-      market_cap_rank: crypto.market_cap_rank,
-      price_change_percentage_24h: crypto.price_change_percentage_24h,
-      total_volume: crypto.total_volume
-    }));
-    
-    res.json({
-      success: true,
-      data: formattedCryptos
-    });
-  } catch (error) {
-    next(error);
-  }
-}
-
-async function getCryptoDetails(req, res, next) {
-  try {
-    const { id } = req.params;
-    if (!id) {
+    if (!cryptoId) {
       return res.status(400).json({
         success: false,
-        message: 'Crypto ID is required'
+        message: 'cryptoId query parameter is required'
       });
     }
     
-    const crypto = await coinGeckoService.getCryptoDetails(id);
+    // Validate cryptoId format (should be alphanumeric, underscores, hyphens, commas)
+    const validCryptoId = /^[a-zA-Z0-9_,\-\s]+$/.test(cryptoId);
+    if (!validCryptoId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid cryptoId format'
+      });
+    }
     
-    if (!crypto || Object.keys(crypto).length === 0) {
+    const data = await coinGeckoService.getCryptoPrice(cryptoId);
+    
+    // Check if we got data for the requested crypto
+    if (!data || Object.keys(data).length === 0) {
       return res.status(404).json({
         success: false,
-        message: 'Cryptocurrency not found'
+        message: `No data found for cryptocurrency: ${cryptoId}`
       });
     }
     
-    const formattedCrypto = {
-      id: crypto.id,
-      symbol: crypto.symbol,
-      name: crypto.name,
-      image: crypto.image.large,
-      market_data: {
-        current_price: crypto.market_data.current_price.usd,
-        market_cap: crypto.market_data.market_cap.usd,
-        market_cap_rank: crypto.market_data.market_cap_rank,
-        price_change_percentage_24h: crypto.market_data.price_change_percentage_24h,
-        price_change_percentage_7d: crypto.market_data.price_change_percentage_7d,
-        total_volume: crypto.market_data.total_volume.usd,
-        high_24h: crypto.market_data.high_24h.usd,
-        low_24h: crypto.market_data.low_24h.usd
-      }
+    // Format the response for a single crypto
+    const cryptoKeys = Object.keys(data);
+    const firstCrypto = cryptoKeys[0];
+    
+    // If multiple cryptos were requested, return the first one
+    const cryptoData = data[firstCrypto];
+    
+    const response = {
+      symbol: firstCrypto,
+      usd: cryptoData.usd || null,
+      inr: cryptoData.inr || null,
+      lastUpdated: new Date().toISOString()
     };
     
-    res.json({
-      success: true,
-      data: formattedCrypto
-    });
+    // If multiple cryptos were requested, include all in the response
+    if (cryptoKeys.length > 1) {
+      response.prices = {};
+      cryptoKeys.forEach(key => {
+        response.prices[key] = {
+          usd: data[key].usd || null,
+          inr: data[key].inr || null
+        };
+      });
+    }
+    
+    res.json(response);
   } catch (error) {
-    next(error);
-  }
-}
-
-async function getCryptoHistory(req, res, next) {
-  try {
-    const { id } = req.params;
-    const { days = 30 } = req.query;
-    
-    if (!id) {
-      return res.status(400).json({
-        success: false,
-        message: 'Crypto ID is required'
-      });
-    }
-    
-    const history = await coinGeckoService.getCryptoHistory(id, parseInt(days));
-    
-    if (!history || Object.keys(history).length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'Cryptocurrency history not found'
-      });
-    }
-    
-    // Format the price data
-    const prices = history.prices.map(pricePoint => ({
-      timestamp: pricePoint[0],
-      price: pricePoint[1]
-    }));
-    
-    // Format the market caps data
-    const market_caps = history.market_caps.map(mcPoint => ({
-      timestamp: mcPoint[0],
-      market_cap: mcPoint[1]
-    }));
-    
-    // Format the total volumes data
-    const total_volumes = history.total_volumes.map(volumePoint => ({
-      timestamp: volumePoint[0],
-      volume: volumePoint[1]
-    }));
-    
-    // Calculate analytics if we have price data
-    let analytics = {};
-    if (prices.length > 0) {
-      const priceValues = prices.map(p => p.price);
-      const sma20 = calculateSMA(priceValues, Math.min(20, priceValues.length));
-      const ema20 = calculateEMA(priceValues, Math.min(20, priceValues.length));
-      const roi = priceValues.length > 0 ? 
-        calculateROI(1000, priceValues[priceValues.length - 1], priceValues[0]) : 0;
-      
-      analytics = {
-        sma20,
-        ema20,
-        roi
-      };
-    }
-    
-    res.json({
-      success: true,
-      data: {
-        prices,
-        market_caps,
-        total_volumes,
-        analytics
+    // Handle specific error cases
+    if (error.response) {
+      // The request was made and the server responded with a status code
+      // that falls out of the range of 2xx
+      if (error.response.status === 404) {
+        return res.status(404).json({
+          success: false,
+          message: 'Cryptocurrency not found'
+        });
+      } else if (error.response.status === 429) {
+        return res.status(429).json({
+          success: false,
+          message: 'Rate limit exceeded. Please try again later.'
+        });
+      } else if (error.response.status >= 500) {
+        return res.status(500).json({
+          success: false,
+          message: 'CoinGecko API is temporarily unavailable. Please try again later.'
+        });
       }
-    });
-  } catch (error) {
-    next(error);
-  }
-}
-
-async function searchCryptos(req, res, next) {
-  try {
-    const { query } = req.query;
-    if (!query) {
-      return res.status(400).json({
-        success: false,
-        message: 'Query parameter is required'
-      });
     }
     
-    const results = await coinGeckoService.searchCryptos(query);
-    
-    const formattedResults = results.map(item => ({
-      id: item.id,
-      symbol: item.symbol,
-      name: item.name,
-      market_cap_rank: item.market_cap_rank
-    }));
-    
-    res.json({
-      success: true,
-      data: formattedResults
+    // Handle network errors or other issues
+    console.error('Error fetching crypto price:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch cryptocurrency price'
     });
-  } catch (error) {
-    next(error);
   }
 }
 
 module.exports = {
-  getTopCryptos,
-  getCryptoDetails,
-  getCryptoHistory,
-  searchCryptos
+  getCryptoPrice
 };
