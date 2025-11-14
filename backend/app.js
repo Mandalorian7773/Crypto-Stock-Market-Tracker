@@ -7,10 +7,11 @@ const errorHandler = require('./src/utils/errorHandler');
 
 const app = express();
 
-// Add CORS middleware to allow requests from the frontend
+// Add CORS middleware to allow requests from all origins
 app.use(cors({
-  origin: ['http://localhost:8080', 'http://localhost:8081', 'http://localhost:8082', 'http://localhost:8083', 'http://localhost:8084', 'http://localhost:8085', 'http://localhost:8086', 'http://localhost:8087', 'http://localhost:8088'], // Allow all frontend ports
-  credentials: true
+  origin: '*', // Allow all origins
+  credentials: true,
+  optionsSuccessStatus: 200 // Some legacy browsers (IE11, various SmartTVs) choke on 204
 }));
 
 app.use(express.json());

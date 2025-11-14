@@ -16,7 +16,7 @@ export const PlotlyChart = ({ data, layout, config }: PlotlyChartProps) => {
   }, []);
 
   if (!isClient) {
-    return <div className="h-[400px] glass rounded-lg animate-pulse" />;
+    return <div className="h-[300px] sm:h-[400px] glass rounded-lg animate-pulse" />;
   }
 
   const defaultLayout = {
@@ -28,7 +28,7 @@ export const PlotlyChart = ({ data, layout, config }: PlotlyChartProps) => {
       color: '#94a3b8',
       showgrid: true,
       gridwidth: 1,
-      tickformat: '%b %d', // Format as "Jan 01"
+      tickformat: '%b %d',
       tickangle: -45,
       showline: true,
       linewidth: 1,
@@ -44,7 +44,7 @@ export const PlotlyChart = ({ data, layout, config }: PlotlyChartProps) => {
       color: '#94a3b8',
       showgrid: true,
       gridwidth: 1,
-      tickformat: '$,.2f', // Format as "$1,234.56"
+      tickformat: '$,.2f',
       showline: true,
       linewidth: 1,
       linecolor: 'rgba(255,255,255,0.2)',
@@ -84,7 +84,8 @@ export const PlotlyChart = ({ data, layout, config }: PlotlyChartProps) => {
         data={data}
         layout={defaultLayout}
         config={defaultConfig}
-        style={{ width: '100%', height: '400px' }}
+        style={{ width: '100%', height: '300px' }}
+        className="w-full"
       />
     </motion.div>
   );

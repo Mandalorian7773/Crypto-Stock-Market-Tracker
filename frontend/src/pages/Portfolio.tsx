@@ -22,7 +22,6 @@ export default function Portfolio() {
           try {
             let currentPrice = 0;
             if (item.type === 'crypto') {
-              // Use our backend API for crypto prices
               const cryptoRes = await axiosInstance.get(
                 `/api/crypto/price?cryptoId=${item.symbol.toLowerCase()}`
               );
@@ -56,7 +55,7 @@ export default function Portfolio() {
 
       return enrichedItems;
     },
-    refetchInterval: 60000, // Reduced frequency to avoid rate limiting
+    refetchInterval: 60000,
     staleTime: 30000,
   });
 
@@ -107,21 +106,21 @@ export default function Portfolio() {
         animate={{ opacity: 1, y: 0 }}
         className="mb-8"
       >
-        <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+        <h1 className="text-3xl sm:text-4xl font-bold mb-2 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
           Portfolio
         </h1>
         <p className="text-muted-foreground">Track your investments</p>
       </motion.div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
         <Card className="glass p-6 border-white/10">
           <p className="text-sm text-muted-foreground mb-1">Total Value</p>
-          <p className="text-4xl font-bold">${totalValue.toFixed(2)}</p>
+          <p className="text-3xl sm:text-4xl font-bold">${totalValue.toFixed(2)}</p>
         </Card>
         <Card className="glass p-6 border-white/10">
           <p className="text-sm text-muted-foreground mb-1">Total P&L</p>
           <p
-            className={`text-4xl font-bold ${
+            className={`text-3xl sm:text-4xl font-bold ${
               totalProfitLoss >= 0 ? 'text-success' : 'text-destructive'
             }`}
           >
@@ -131,7 +130,7 @@ export default function Portfolio() {
       </div>
 
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} className="h-[200px] glass" />
           ))}
@@ -139,11 +138,11 @@ export default function Portfolio() {
       ) : portfolio && portfolio.length > 0 ? (
         <>
           <div className="mb-8">
-            <h2 className="text-2xl font-bold mb-4">Asset Allocation</h2>
-            <PlotlyChart data={pieData} layout={{ height: 400 }} />
+            <h2 className="text-xl sm:text-2xl font-bold mb-4">Asset Allocation</h2>
+            <PlotlyChart data={pieData} layout={{ height: 300, width: '100%' }} />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {portfolio.map((item: any) => (
               <PortfolioItemCard
                 key={item.symbol}
@@ -159,7 +158,7 @@ export default function Portfolio() {
           </div>
         </>
       ) : (
-        <Card className="glass p-12 text-center border-white/10">
+        <Card className="glass p-8 sm:p-12 text-center border-white/10">
           <p className="text-muted-foreground">
             Your portfolio is empty. Add some assets to get started!
           </p>

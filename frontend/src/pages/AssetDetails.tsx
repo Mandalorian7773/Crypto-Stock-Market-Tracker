@@ -41,7 +41,6 @@ export default function AssetDetails() {
     queryKey: ['crypto-price', symbol],
     queryFn: async () => {
       try {
-        // Map common crypto symbols to their full names for the API
         const cryptoIdMap: Record<string, string> = {
           'btc': 'bitcoin',
           'eth': 'ethereum',
@@ -199,15 +198,12 @@ export default function AssetDetails() {
 
         const cryptoId = cryptoIdMap[symbol?.toLowerCase() || ''] || symbol?.toLowerCase();
         
-        // Use our backend API for all crypto data - no direct CoinGecko calls
         const response = await axiosInstance.get(`/api/crypto/price?cryptoId=${cryptoId}`);
         
-        // Check if we got valid data
         if (!response.data || (response.data.usd === undefined && response.data.symbol === undefined)) {
           throw new Error('Invalid crypto data');
         }
         
-        // Return data in the format expected by the component
         return {
           id: cryptoId,
           symbol: response.data.symbol || symbol,
@@ -219,12 +215,11 @@ export default function AssetDetails() {
         };
       } catch (error) {
         console.error('Error fetching crypto data:', error);
-        // Re-throw the error so it can be handled by the query error handler
         throw error;
       }
     },
     enabled: !!symbol,
-    refetchInterval: 60000, // Reduce frequency to avoid rate limiting
+    refetchInterval: 60000,
   });
 
   const { data: stockData, error: stockError } = useQuery({
@@ -233,7 +228,6 @@ export default function AssetDetails() {
       try {
         const response = await axiosInstance.get(`/api/stocks/${symbol}/quote`);
         
-        // Check if we got valid data
         if (!response.data || response.data.price === undefined) {
           throw new Error('Invalid stock data');
         }
@@ -241,21 +235,18 @@ export default function AssetDetails() {
         return response.data;
       } catch (error) {
         console.error('Error fetching stock data:', error);
-        // Re-throw the error so it can be handled by the query error handler
         throw error;
       }
     },
     enabled: !!symbol,
-    refetchInterval: 60000, // Reduce frequency to avoid rate limiting
+    refetchInterval: 60000,
   });
 
   const { data: historyData, isLoading: historyLoading, error: historyError } = useQuery({
     queryKey: ['asset-history', symbol, timeRange],
     queryFn: async () => {
       try {
-        // Only fetch history for stocks, not crypto
         if (cryptoData) {
-          // Generate more realistic mock data based on time range
           const mockHistory = [];
           const basePrice = cryptoData.current_price || 100;
           
@@ -265,27 +256,26 @@ export default function AssetDetails() {
           switch (timeRange) {
             case '1D':
               days = 1;
-              interval = 1/24; // hourly data
+              interval = 1/24;
               break;
             case '7D':
               days = 7;
-              interval = 0.25; // 6-hourly data
+              interval = 0.25;
               break;
             case '1M':
               days = 30;
-              interval = 1; // daily data
+              interval = 1;
               break;
             case '1Y':
               days = 365;
-              interval = 5; // 5-day data
+              interval = 5;
               break;
             default:
               days = 30;
               interval = 1;
           }
           
-          // Generate price data with realistic fluctuations
-          let currentPrice = basePrice * (0.95 + Math.random() * 0.1); // Start slightly off base
+          let currentPrice = basePrice * (0.95 + Math.random() * 0.1);
           
           for (let i = Math.floor(days/interval); i >= 0; i--) {
             const date = new Date();
@@ -300,11 +290,9 @@ export default function AssetDetails() {
               date.setDate(date.getDate() - i * 5);
             }
             
-            // Add realistic price movement (random walk with slight trend)
-            const change = (Math.random() - 0.5) * (basePrice * 0.02); // ±1% daily change
+            const change = (Math.random() - 0.5) * (basePrice * 0.02);
             currentPrice = currentPrice + change;
             
-            // Ensure price doesn't go negative
             currentPrice = Math.max(currentPrice, basePrice * 0.1);
             
             mockHistory.push({
@@ -322,7 +310,6 @@ export default function AssetDetails() {
         return response.data;
       } catch (error) {
         console.error('Error fetching history data:', error);
-        // Return mock data as fallback
         const mockHistory = [];
         const basePrice = stockData?.price || 100;
         for (let i = 30; i >= 0; i--) {
@@ -343,15 +330,11 @@ export default function AssetDetails() {
   const price = cryptoData?.current_price || stockData?.price || 0;
   const change24h = cryptoData?.price_change_percentage_24h || stockData?.changePercent || 0;
 
-  // Check if we have valid data or if there was an error
   const hasValidData = (cryptoData && cryptoData.current_price !== undefined) || 
                        (stockData && stockData.price !== undefined);
   const hasError = cryptoError || stockError;
 
-  // If we have an error and no valid data, redirect to NotFound
   if (hasError && !hasValidData) {
-    // In a real implementation, we would redirect to NotFound page
-    // For now, we'll show an error message
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="flex flex-col items-center justify-center min-h-[60vh]">
@@ -369,13 +352,12 @@ export default function AssetDetails() {
     );
   }
 
-  // If we don't have data yet and no errors, show loading
   if (!data && !hasError) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="space-y-4">
           <Skeleton className="h-12 w-64" />
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             {Array.from({ length: 4 }).map((_, i) => (
               <Skeleton key={i} className="h-24" />
             ))}
@@ -459,7 +441,6 @@ export default function AssetDetails() {
       ]
     : [];
 
-  // Enhanced chart layout with better axis formatting
   const chartLayout = {
     xaxis: {
       title: {
@@ -500,9 +481,9 @@ export default function AssetDetails() {
         animate={{ opacity: 1, y: 0 }}
         className="mb-8"
       >
-        <div className="flex items-start justify-between mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-4 gap-4">
           <div>
-            <h1 className="text-4xl font-bold mb-2">{symbol}</h1>
+            <h1 className="text-3xl sm:text-4xl font-bold mb-2">{symbol}</h1>
             <p className="text-muted-foreground">{data?.name}</p>
           </div>
           <div className="flex gap-2">
@@ -556,15 +537,15 @@ export default function AssetDetails() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <Card className="glass p-4 border-white/10">
             <p className="text-sm text-muted-foreground mb-1">Price</p>
-            <p className="text-2xl font-bold">${price.toFixed(2)}</p>
+            <p className="text-xl sm:text-2xl font-bold">${price.toFixed(2)}</p>
           </Card>
           <Card className="glass p-4 border-white/10">
             <p className="text-sm text-muted-foreground mb-1">24h Change</p>
             <p
-              className={`text-2xl font-bold ${
+              className={`text-xl sm:text-2xl font-bold ${
                 change24h >= 0 ? 'text-success' : 'text-destructive'
               }`}
             >
@@ -574,13 +555,13 @@ export default function AssetDetails() {
           </Card>
           <Card className="glass p-4 border-white/10">
             <p className="text-sm text-muted-foreground mb-1">Market Cap</p>
-            <p className="text-2xl font-bold">
+            <p className="text-xl sm:text-2xl font-bold">
               ${(data?.market_cap || data?.marketCap || 0).toLocaleString()}
             </p>
           </Card>
           <Card className="glass p-4 border-white/10">
             <p className="text-sm text-muted-foreground mb-1">Volume 24h</p>
-            <p className="text-2xl font-bold">
+            <p className="text-xl sm:text-2xl font-bold">
               ${(data?.total_volume || data?.volume || 0).toLocaleString()}
             </p>
           </Card>
@@ -588,7 +569,7 @@ export default function AssetDetails() {
       </motion.div>
 
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <Tabs value={timeRange} onValueChange={setTimeRange}>
             <TabsList className="glass">
               <TabsTrigger value="1D">1D</TabsTrigger>
@@ -616,7 +597,7 @@ export default function AssetDetails() {
         </div>
 
         {historyLoading ? (
-          <Skeleton className="h-[400px] glass" />
+          <Skeleton className="h-[300px] sm:h-[400px] glass" />
         ) : (
           <PlotlyChart data={chartData} layout={chartLayout}  />
         )}

@@ -61,7 +61,7 @@ export default function Leaderboard() {
         animate={{ opacity: 1, y: 0 }}
         className="mb-8"
       >
-        <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+        <h1 className="text-3xl sm:text-4xl font-bold mb-2 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
           Leaderboard
         </h1>
         <p className="text-muted-foreground">Top performing portfolios</p>
@@ -75,50 +75,52 @@ export default function Leaderboard() {
             ))}
           </div>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow className="border-white/10 hover:bg-transparent">
-                <TableHead className="w-20">Rank</TableHead>
-                <TableHead>User ID</TableHead>
-                <TableHead className="text-right">ROI</TableHead>
-                <TableHead className="text-right">Portfolio Value</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {leaderboard?.map((entry: any, index: number) => (
-                <motion.tr
-                  key={entry.userId}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  className={`border-white/10 ${getRankClass(entry.rank)}`}
-                >
-                  <TableCell className="font-medium">
-                    <div className="flex items-center gap-2">
-                      {getRankIcon(entry.rank)}
-                    </div>
-                  </TableCell>
-                  <TableCell className="font-mono text-sm">
-                    {maskUserId(entry.userId)}
-                  </TableCell>
-                  <TableCell
-                    className={`text-right font-semibold ${
-                      entry.roiPercent >= 0 ? 'text-success' : 'text-destructive'
-                    }`}
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-white/10 hover:bg-transparent">
+                  <TableHead className="w-20">Rank</TableHead>
+                  <TableHead>User ID</TableHead>
+                  <TableHead className="text-right">ROI</TableHead>
+                  <TableHead className="text-right">Portfolio Value</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {leaderboard?.map((entry: any, index: number) => (
+                  <motion.tr
+                    key={entry.userId}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    className={`border-white/10 ${getRankClass(entry.rank)}`}
                   >
-                    {entry.roiPercent >= 0 ? '+' : ''}
-                    {entry.roiPercent.toFixed(2)}%
-                  </TableCell>
-                  <TableCell className="text-right font-semibold">
-                    ${entry.portfolioValue.toLocaleString(undefined, {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
-                  </TableCell>
-                </motion.tr>
-              ))}
-            </TableBody>
-          </Table>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-2">
+                        {getRankIcon(entry.rank)}
+                      </div>
+                    </TableCell>
+                    <TableCell className="font-mono text-sm">
+                      {maskUserId(entry.userId)}
+                    </TableCell>
+                    <TableCell
+                      className={`text-right font-semibold ${
+                        entry.roiPercent >= 0 ? 'text-success' : 'text-destructive'
+                      }`}
+                    >
+                      {entry.roiPercent >= 0 ? '+' : ''}
+                      {entry.roiPercent.toFixed(2)}%
+                    </TableCell>
+                    <TableCell className="text-right font-semibold">
+                      ${entry.portfolioValue.toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </TableCell>
+                  </motion.tr>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         )}
       </Card>
     </div>
