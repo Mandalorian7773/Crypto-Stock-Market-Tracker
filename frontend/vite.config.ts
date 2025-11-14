@@ -14,6 +14,7 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      buffer: 'buffer',
     },
   },
   // Production build optimizations
@@ -43,5 +44,23 @@ export default defineConfig(({ mode }) => ({
   // Ensure proper MIME types for deployment
   define: {
     global: 'globalThis',
-  }
+  },
+  // Add Node.js polyfills
+  optimizeDeps: {
+    esbuildOptions: {
+      define: {
+        global: 'globalThis',
+      },
+      plugins: [
+        {
+          name: 'fix-buffer',
+          setup(build) {
+            build.onResolve({ filter: /^buffer$/ }, () => {
+              return { path: require.resolve('buffer/') };
+            });
+          },
+        },
+      ],
+    },
+  },
 }));
