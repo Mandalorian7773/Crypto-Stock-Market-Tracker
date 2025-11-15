@@ -11,8 +11,9 @@ export const useFirebaseAuth = () => {
       if (user) {
         setUserId(user.uid);
       } else {
-        // Set a default user ID when not authenticated
-        setUserId('dev-user-id');
+        // Generate a random session ID when not authenticated
+        const sessionId = `session_${Math.random().toString(36).substr(2, 9)}`;
+        setUserId(sessionId);
       }
     });
 

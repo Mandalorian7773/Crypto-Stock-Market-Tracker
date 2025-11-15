@@ -12,7 +12,7 @@ const axiosInstance = axios.create({
 // Add a request interceptor to handle user ID
 axiosInstance.interceptors.request.use((config) => {
   const state = useStore.getState();
-  const userId = state.userId || 'dev-user-id';
+  const userId = state.userId;
   if (userId) {
     config.headers['x-user-id'] = userId;
   }
