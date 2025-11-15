@@ -1,17 +1,16 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { getWatchlist, addToWatchlist, removeFromWatchlist, setWatchlist } from '@/services/watchlistService';
 
 interface StoreState {
   userId: string | null;
   theme: 'light' | 'dark';
   watchlist: string[];
-  emailWatchlists: Record<string, string[]>; // Store watchlists for each email
   setUserId: (userId: string | null) => void;
   setTheme: (theme: 'light' | 'dark') => void;
   addToWatchlist: (symbol: string) => void;
   removeFromWatchlist: (symbol: string) => void;
   setWatchlist: (watchlist: string[]) => void;
-  setEmailWatchlists: (emailWatchlists: Record<string, string[]>) => void; // Add this
 }
 
 export const useStore = create<StoreState>()(
@@ -20,56 +19,60 @@ export const useStore = create<StoreState>()(
       userId: null,
       theme: 'dark',
       watchlist: [],
-      emailWatchlists: {}, // Initialize as empty object
       setUserId: (userId) => {
         set({ userId });
         // When userId changes, load the corresponding watchlist if it's an email
         if (userId && userId.includes('@')) {
-          const state = get();
-          const userWatchlist = state.emailWatchlists[userId] || [];
-          set({ watchlist: userWatchlist });
+          // Load watchlist from Firebase
+          getWatchlist(userId).then(result => {
+            if (result.success) {
+              set({ watchlist: result.data });
+            }
+          });
         }
       },
       setTheme: (theme) => set({ theme }),
-      addToWatchlist: (symbol) =>
-        set((state) => {
-          const newWatchlist = state.watchlist.includes(symbol)
-            ? state.watchlist
-            : [...state.watchlist, symbol];
-          
-          // If current user is logged in with email, save to emailWatchlists
-          if (state.userId && state.userId.includes('@')) {
-            return {
-              watchlist: newWatchlist,
-              emailWatchlists: {
-                ...state.emailWatchlists,
-                [state.userId]: newWatchlist
-              }
-            };
-          }
-          return { watchlist: newWatchlist };
-        }),
-      removeFromWatchlist: (symbol) =>
-        set((state) => {
-          const newWatchlist = state.watchlist.filter((s) => s !== symbol);
-          
-          // If current user is logged in with email, save to emailWatchlists
-          if (state.userId && state.userId.includes('@')) {
-            return {
-              watchlist: newWatchlist,
-              emailWatchlists: {
-                ...state.emailWatchlists,
-                [state.userId]: newWatchlist
-              }
-            };
-          }
-          return { watchlist: newWatchlist };
-        }),
-      setWatchlist: (watchlist) => set({ watchlist }),
-      setEmailWatchlists: (emailWatchlists) => set({ emailWatchlists }), // Add this
+      addToWatchlist: (symbol) => {
+        const state = get();
+        const newWatchlist = state.watchlist.includes(symbol)
+          ? state.watchlist
+          : [...state.watchlist, symbol];
+        
+        set({ watchlist: newWatchlist });
+        
+        // If current user is logged in with email, save to Firebase
+        if (state.userId && state.userId.includes('@')) {
+          addToWatchlist(state.userId, symbol);
+        }
+      },
+      removeFromWatchlist: (symbol) => {
+        const state = get();
+        const newWatchlist = state.watchlist.filter((s) => s !== symbol);
+        
+        set({ watchlist: newWatchlist });
+        
+        // If current user is logged in with email, save to Firebase
+        if (state.userId && state.userId.includes('@')) {
+          removeFromWatchlist(state.userId, symbol);
+        }
+      },
+      setWatchlist: (watchlist) => {
+        const state = get();
+        set({ watchlist });
+        
+        // If current user is logged in with email, save to Firebase
+        if (state.userId && state.userId.includes('@')) {
+          setWatchlist(state.userId, watchlist);
+        }
+      },
     }),
     {
       name: 'market-tracker-storage',
+      partialize: (state) => ({ 
+        theme: state.theme,
+        // Don't persist watchlist and userId to localStorage since we're using Firebase
+        // Only persist theme settings
+      }),
     }
   )
 );
