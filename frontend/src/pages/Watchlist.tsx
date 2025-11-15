@@ -20,25 +20,42 @@ export default function Watchlist() {
             // Try to get crypto data first
             const cryptoRes = await axiosInstance.get(`/api/crypto/price?cryptoId=${symbol.toLowerCase()}`);
             if (cryptoRes.data) {
-              return {
-                symbol: cryptoRes.data.symbol || symbol,
-                name: cryptoRes.data.name || symbol,
-                price: cryptoRes.data.usd || 0,
-                change24h: cryptoRes.data.usd_24h_change || 0,
-                type: 'crypto' as const,
-              };
+              // Check if this is a multi-price response
+              if (cryptoRes.data.prices && Object.keys(cryptoRes.data.prices).length > 0) {
+                // Get the first price from the prices object
+                const priceKeys = Object.keys(cryptoRes.data.prices);
+                const firstPrice = cryptoRes.data.prices[priceKeys[0]];
+                return {
+                  symbol: firstPrice.symbol || symbol,
+                  name: firstPrice.name || symbol,
+                  price: firstPrice.usd || 0,
+                  change24h: firstPrice.usd_24h_change || 0,
+                  type: 'crypto' as const,
+                };
+              } else {
+                // Single price response
+                return {
+                  symbol: cryptoRes.data.symbol || symbol,
+                  name: cryptoRes.data.name || symbol,
+                  price: cryptoRes.data.usd || 0,
+                  change24h: cryptoRes.data.usd_24h_change || 0,
+                  type: 'crypto' as const,
+                };
+              }
             }
           } catch (cryptoError) {
             // Crypto failed, try stock data
             try {
               const stockRes = await axiosInstance.get(`/api/stocks/${symbol}/quote`);
-              return {
-                symbol: stockRes.data.symbol,
-                name: stockRes.data.name,
-                price: stockRes.data.price,
-                change24h: stockRes.data.changePercent,
-                type: 'stock' as const,
-              };
+              if (stockRes.data) {
+                return {
+                  symbol: stockRes.data.symbol,
+                  name: stockRes.data.name,
+                  price: stockRes.data.price,
+                  change24h: stockRes.data.changePercent,
+                  type: 'stock' as const,
+                };
+              }
             } catch (stockError) {
               console.error(`Error fetching data for ${symbol}:`, stockError);
               // Return basic data if both fail

@@ -20,4 +20,7 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const analytics = getAnalytics(app);
 
+// Enable authentication persistence
+// This will be handled by Firebase automatically
+
 export { auth, db, analytics };

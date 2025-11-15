@@ -8,6 +8,14 @@ import { useNavigate } from 'react-router-dom';
 import axiosInstance from '@/lib/axios';
 import { useToast } from '@/hooks/use-toast';
 import { useStore } from '@/store/useStore';
+import { auth } from '@/lib/firebase';
+import { 
+  signInWithEmailAndPassword, 
+  signOut, 
+  createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
+  onAuthStateChanged
+} from 'firebase/auth';
 import {
   Dialog,
   DialogContent,
@@ -21,9 +29,13 @@ export const Header = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const userId = useStore((state) => state.userId);
+  const setUserId = useStore((state) => state.setUserId);
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [authMode, setAuthMode] = useState<'profile' | 'signin' | 'signup' | 'reset'>('profile');
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -78,6 +90,123 @@ export const Header = () => {
     }
   };
 
+  const handleSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      toast({ title: 'Signed in successfully' });
+      setAuthMode('profile');
+      setEmail('');
+      setPassword('');
+    } catch (error: any) {
+      console.error('Sign in error:', error);
+      let errorMessage = 'Failed to sign in';
+      
+      switch (error.code) {
+        case 'auth/user-not-found':
+          errorMessage = 'No account found with this email';
+          break;
+        case 'auth/wrong-password':
+          errorMessage = 'Incorrect password';
+          break;
+        case 'auth/invalid-email':
+          errorMessage = 'Invalid email address';
+          break;
+        case 'auth/user-disabled':
+          errorMessage = 'This account has been disabled';
+          break;
+        default:
+          errorMessage = error.message || 'Failed to sign in';
+      }
+      
+      toast({ 
+        title: 'Sign in failed', 
+        description: errorMessage,
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await createUserWithEmailAndPassword(auth, email, password);
+      toast({ title: 'Account created successfully' });
+      setAuthMode('profile');
+      setEmail('');
+      setPassword('');
+    } catch (error: any) {
+      console.error('Sign up error:', error);
+      let errorMessage = 'Failed to create account';
+      
+      switch (error.code) {
+        case 'auth/email-already-in-use':
+          errorMessage = 'An account already exists with this email';
+          break;
+        case 'auth/invalid-email':
+          errorMessage = 'Invalid email address';
+          break;
+        case 'auth/weak-password':
+          errorMessage = 'Password should be at least 6 characters';
+          break;
+        default:
+          errorMessage = error.message || 'Failed to create account';
+      }
+      
+      toast({ 
+        title: 'Sign up failed', 
+        description: errorMessage,
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handlePasswordReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await sendPasswordResetEmail(auth, email);
+      toast({ 
+        title: 'Password reset email sent', 
+        description: 'Check your email for password reset instructions' 
+      });
+      setAuthMode('signin');
+    } catch (error: any) {
+      console.error('Password reset error:', error);
+      let errorMessage = 'Failed to send password reset email';
+      
+      switch (error.code) {
+        case 'auth/user-not-found':
+          errorMessage = 'No account found with this email';
+          break;
+        case 'auth/invalid-email':
+          errorMessage = 'Invalid email address';
+          break;
+        default:
+          errorMessage = error.message || 'Failed to send password reset email';
+      }
+      
+      toast({ 
+        title: 'Password reset failed', 
+        description: errorMessage,
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth);
+      toast({ title: 'Signed out successfully' });
+      setAuthMode('signin');
+    } catch (error: any) {
+      toast({ 
+        title: 'Sign out failed', 
+        description: error.message || 'Failed to sign out',
+        variant: 'destructive'
+      });
+    }
+  };
+
   const navItems = [
     { path: '/', label: 'Dashboard' },
     { path: '/portfolio', label: 'Portfolio' },
@@ -129,7 +258,14 @@ export const Header = () => {
             ))}
             
             {/* Clickable Profile */}
-            <Dialog open={profileOpen} onOpenChange={setProfileOpen}>
+            <Dialog open={profileOpen} onOpenChange={(open) => {
+              setProfileOpen(open);
+              if (!open) {
+                setAuthMode('profile');
+                setEmail('');
+                setPassword('');
+              }
+            }}>
               <DialogTrigger asChild>
                 <Button
                   variant="ghost"
@@ -143,31 +279,124 @@ export const Header = () => {
               </DialogTrigger>
               <DialogContent className="glass border-white/10">
                 <DialogHeader>
-                  <DialogTitle>User Profile</DialogTitle>
+                  <DialogTitle>
+                    {authMode === 'profile' ? 'User Profile' : 
+                     authMode === 'signin' ? 'Sign In' :
+                     authMode === 'signup' ? 'Sign Up' : 'Reset Password'}
+                  </DialogTitle>
                 </DialogHeader>
                 <div className="py-4">
-                  {userId && !userId.startsWith('session_') ? (
+                  {authMode === 'profile' ? (
+                    userId && !userId.startsWith('session_') ? (
+                      <div className="space-y-4">
+                        <div>
+                          <p className="text-sm text-muted-foreground">User ID</p>
+                          <p className="font-mono text-sm">{userId}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Email</p>
+                          <p className="text-sm">
+                            {auth.currentUser?.email || 'No email available'}
+                          </p>
+                        </div>
+                        <Button onClick={handleSignOut} variant="outline" className="w-full">
+                          Sign Out
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <p className="text-sm text-muted-foreground">
+                          Not signed in. Using session ID: {userId}
+                        </p>
+                        <Button onClick={() => setAuthMode('signin')} className="w-full">
+                          Sign In
+                        </Button>
+                      </div>
+                    )
+                  ) : authMode === 'signin' ? (
                     <div className="space-y-4">
-                      <div>
-                        <p className="text-sm text-muted-foreground">User ID</p>
-                        <p className="font-mono text-sm">{userId}</p>
+                      <div className="space-y-2">
+                        <Input
+                          type="email"
+                          placeholder="Email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          className="glass border-white/10"
+                        />
+                        <Input
+                          type="password"
+                          placeholder="Password"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          className="glass border-white/10"
+                        />
                       </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Email</p>
-                        <p className="text-sm">user@example.com</p>
-                      </div>
-                      <Button variant="outline" className="w-full">
-                        Sign Out
+                      <Button onClick={handleSignIn} className="w-full">
+                        Sign In
                       </Button>
+                      <div className="flex justify-between text-xs">
+                        <button 
+                          onClick={() => setAuthMode('signup')}
+                          className="text-primary hover:underline"
+                        >
+                          Create Account
+                        </button>
+                        <button 
+                          onClick={() => setAuthMode('reset')}
+                          className="text-primary hover:underline"
+                        >
+                          Forgot Password?
+                        </button>
+                      </div>
+                    </div>
+                  ) : authMode === 'signup' ? (
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Input
+                          type="email"
+                          placeholder="Email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          className="glass border-white/10"
+                        />
+                        <Input
+                          type="password"
+                          placeholder="Password (6+ characters)"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          className="glass border-white/10"
+                        />
+                      </div>
+                      <Button onClick={handleSignUp} className="w-full">
+                        Sign Up
+                      </Button>
+                      <button 
+                        onClick={() => setAuthMode('signin')}
+                        className="text-xs text-primary hover:underline w-full"
+                      >
+                        Already have an account? Sign In
+                      </button>
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      <p className="text-sm text-muted-foreground">
-                        Not signed in. Using session ID: {userId}
-                      </p>
-                      <Button className="w-full">
-                        Sign In
+                      <div className="space-y-2">
+                        <Input
+                          type="email"
+                          placeholder="Email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          className="glass border-white/10"
+                        />
+                      </div>
+                      <Button onClick={handlePasswordReset} className="w-full">
+                        Reset Password
                       </Button>
+                      <button 
+                        onClick={() => setAuthMode('signin')}
+                        className="text-xs text-primary hover:underline w-full"
+                      >
+                        Back to Sign In
+                      </button>
                     </div>
                   )}
                 </div>
