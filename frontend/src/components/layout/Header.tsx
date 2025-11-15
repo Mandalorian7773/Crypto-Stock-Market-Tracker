@@ -11,9 +11,7 @@ import { useStore } from '@/store/useStore';
 import { auth } from '@/lib/firebase';
 import { 
   signInWithEmailAndPassword, 
-  signOut, 
-  createUserWithEmailAndPassword,
-  sendPasswordResetEmail,
+  signOut,
   onAuthStateChanged
 } from 'firebase/auth';
 import {
@@ -35,7 +33,7 @@ export const Header = () => {
   const [profileOpen, setProfileOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [authMode, setAuthMode] = useState<'profile' | 'signin' | 'signup' | 'reset'>('profile');
+  const [authMode, setAuthMode] = useState<'profile' | 'signin'>('profile');
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -115,78 +113,15 @@ export const Header = () => {
         case 'auth/user-disabled':
           errorMessage = 'This account has been disabled';
           break;
+        case 'auth/configuration-not-found':
+          errorMessage = 'Authentication not configured. Please contact administrator.';
+          break;
         default:
           errorMessage = error.message || 'Failed to sign in';
       }
       
       toast({ 
         title: 'Sign in failed', 
-        description: errorMessage,
-        variant: 'destructive'
-      });
-    }
-  };
-
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      await createUserWithEmailAndPassword(auth, email, password);
-      toast({ title: 'Account created successfully' });
-      setAuthMode('profile');
-      setEmail('');
-      setPassword('');
-    } catch (error: any) {
-      console.error('Sign up error:', error);
-      let errorMessage = 'Failed to create account';
-      
-      switch (error.code) {
-        case 'auth/email-already-in-use':
-          errorMessage = 'An account already exists with this email';
-          break;
-        case 'auth/invalid-email':
-          errorMessage = 'Invalid email address';
-          break;
-        case 'auth/weak-password':
-          errorMessage = 'Password should be at least 6 characters';
-          break;
-        default:
-          errorMessage = error.message || 'Failed to create account';
-      }
-      
-      toast({ 
-        title: 'Sign up failed', 
-        description: errorMessage,
-        variant: 'destructive'
-      });
-    }
-  };
-
-  const handlePasswordReset = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      await sendPasswordResetEmail(auth, email);
-      toast({ 
-        title: 'Password reset email sent', 
-        description: 'Check your email for password reset instructions' 
-      });
-      setAuthMode('signin');
-    } catch (error: any) {
-      console.error('Password reset error:', error);
-      let errorMessage = 'Failed to send password reset email';
-      
-      switch (error.code) {
-        case 'auth/user-not-found':
-          errorMessage = 'No account found with this email';
-          break;
-        case 'auth/invalid-email':
-          errorMessage = 'Invalid email address';
-          break;
-        default:
-          errorMessage = error.message || 'Failed to send password reset email';
-      }
-      
-      toast({ 
-        title: 'Password reset failed', 
         description: errorMessage,
         variant: 'destructive'
       });
@@ -280,9 +215,7 @@ export const Header = () => {
               <DialogContent className="glass border-white/10">
                 <DialogHeader>
                   <DialogTitle>
-                    {authMode === 'profile' ? 'User Profile' : 
-                     authMode === 'signin' ? 'Sign In' :
-                     authMode === 'signup' ? 'Sign Up' : 'Reset Password'}
+                    {authMode === 'profile' ? 'User Profile' : 'Sign In'}
                   </DialogTitle>
                 </DialogHeader>
                 <div className="py-4">
@@ -313,7 +246,7 @@ export const Header = () => {
                         </Button>
                       </div>
                     )
-                  ) : authMode === 'signin' ? (
+                  ) : (
                     <div className="space-y-4">
                       <div className="space-y-2">
                         <Input
@@ -334,69 +267,9 @@ export const Header = () => {
                       <Button onClick={handleSignIn} className="w-full">
                         Sign In
                       </Button>
-                      <div className="flex justify-between text-xs">
-                        <button 
-                          onClick={() => setAuthMode('signup')}
-                          className="text-primary hover:underline"
-                        >
-                          Create Account
-                        </button>
-                        <button 
-                          onClick={() => setAuthMode('reset')}
-                          className="text-primary hover:underline"
-                        >
-                          Forgot Password?
-                        </button>
-                      </div>
-                    </div>
-                  ) : authMode === 'signup' ? (
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Input
-                          type="email"
-                          placeholder="Email"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          className="glass border-white/10"
-                        />
-                        <Input
-                          type="password"
-                          placeholder="Password (6+ characters)"
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          className="glass border-white/10"
-                        />
-                      </div>
-                      <Button onClick={handleSignUp} className="w-full">
-                        Sign Up
-                      </Button>
-                      <button 
-                        onClick={() => setAuthMode('signin')}
-                        className="text-xs text-primary hover:underline w-full"
-                      >
-                        Already have an account? Sign In
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Input
-                          type="email"
-                          placeholder="Email"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          className="glass border-white/10"
-                        />
-                      </div>
-                      <Button onClick={handlePasswordReset} className="w-full">
-                        Reset Password
-                      </Button>
-                      <button 
-                        onClick={() => setAuthMode('signin')}
-                        className="text-xs text-primary hover:underline w-full"
-                      >
-                        Back to Sign In
-                      </button>
+                      <p className="text-xs text-muted-foreground text-center">
+                        Sign in with your Firebase account
+                      </p>
                     </div>
                   )}
                 </div>
