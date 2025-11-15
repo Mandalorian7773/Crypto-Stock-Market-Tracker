@@ -2,7 +2,6 @@ import { motion } from 'framer-motion';
 import { useStore } from '@/store/useStore';
 import { AssetCard } from '@/components/cards/AssetCard';
 import { useQuery } from '@tanstack/react-query';
-import axios from 'axios';
 import axiosInstance from '@/lib/axios';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -18,44 +17,39 @@ export default function Watchlist() {
       const results = await Promise.all(
         watchlist.map(async (symbol) => {
           try {
-            const cryptoRes = await axios.get(
-              `https://api.coingecko.com/api/v3/coins/markets`,
-              {
-                params: {
-                  vs_currency: 'usd',
-                  ids: symbol.toLowerCase(),
-                },
-              }
-            );
-            if (cryptoRes.data.length > 0) {
-              const crypto = cryptoRes.data[0];
-              
-              const priceRes = await axiosInstance.get(`/api/crypto/price?cryptoId=${symbol.toLowerCase()}`);
-              
+            // Try to get crypto data first
+            const cryptoRes = await axiosInstance.get(`/api/crypto/price?cryptoId=${symbol.toLowerCase()}`);
+            if (cryptoRes.data) {
               return {
-                symbol: crypto.symbol.toUpperCase(),
-                name: crypto.name,
-                price: priceRes.data?.usd || crypto.current_price,
-                change24h: crypto.price_change_percentage_24h,
+                symbol: cryptoRes.data.symbol || symbol,
+                name: cryptoRes.data.name || symbol,
+                price: cryptoRes.data.usd || 0,
+                change24h: cryptoRes.data.usd_24h_change || 0,
                 type: 'crypto' as const,
               };
             }
-          } catch (error) {
-            console.error('Error fetching crypto:', error);
-          }
-
-          try {
-            const stockRes = await axiosInstance.get(`/api/stocks/${symbol}/quote`);
-            return {
-              symbol: stockRes.data.symbol,
-              name: stockRes.data.name,
-              price: stockRes.data.price,
-              change24h: stockRes.data.changePercent,
-              type: 'stock' as const,
-            };
-          } catch (error) {
-            console.error('Error fetching stock:', error);
-            return null;
+          } catch (cryptoError) {
+            // Crypto failed, try stock data
+            try {
+              const stockRes = await axiosInstance.get(`/api/stocks/${symbol}/quote`);
+              return {
+                symbol: stockRes.data.symbol,
+                name: stockRes.data.name,
+                price: stockRes.data.price,
+                change24h: stockRes.data.changePercent,
+                type: 'stock' as const,
+              };
+            } catch (stockError) {
+              console.error(`Error fetching data for ${symbol}:`, stockError);
+              // Return basic data if both fail
+              return {
+                symbol: symbol,
+                name: symbol,
+                price: 0,
+                change24h: 0,
+                type: 'unknown' as const,
+              };
+            }
           }
         })
       );
@@ -99,7 +93,7 @@ export default function Watchlist() {
         >
           {assets?.map((asset: any) => (
             <AssetCard
-              key={asset.symbol}
+              key={`${asset.symbol}-${asset.type}`}
               symbol={asset.symbol}
               name={asset.name}
               price={asset.price}

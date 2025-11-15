@@ -8,6 +8,13 @@ import { useNavigate } from 'react-router-dom';
 import axiosInstance from '@/lib/axios';
 import { useToast } from '@/hooks/use-toast';
 import { useStore } from '@/store/useStore';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 
 export const Header = () => {
   const location = useLocation();
@@ -16,6 +23,7 @@ export const Header = () => {
   const userId = useStore((state) => state.userId);
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -120,13 +128,51 @@ export const Header = () => {
               </Link>
             ))}
             
-            {/* User Info Display */}
-            <div className="flex items-center gap-2 px-3 py-2 glass border border-white/10 rounded-lg">
-              <User className="h-4 w-4 text-muted-foreground" />
-              <span className="text-xs font-mono truncate max-w-24">
-                {userId}
-              </span>
-            </div>
+            {/* Clickable Profile */}
+            <Dialog open={profileOpen} onOpenChange={setProfileOpen}>
+              <DialogTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="flex items-center gap-2 px-3 py-2 glass border border-white/10 rounded-lg"
+                >
+                  <User className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-xs font-mono truncate max-w-24">
+                    {userId && !userId.startsWith('session_') ? 'Profile' : 'Sign In'}
+                  </span>
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="glass border-white/10">
+                <DialogHeader>
+                  <DialogTitle>User Profile</DialogTitle>
+                </DialogHeader>
+                <div className="py-4">
+                  {userId && !userId.startsWith('session_') ? (
+                    <div className="space-y-4">
+                      <div>
+                        <p className="text-sm text-muted-foreground">User ID</p>
+                        <p className="font-mono text-sm">{userId}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Email</p>
+                        <p className="text-sm">user@example.com</p>
+                      </div>
+                      <Button variant="outline" className="w-full">
+                        Sign Out
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <p className="text-sm text-muted-foreground">
+                        Not signed in. Using session ID: {userId}
+                      </p>
+                      <Button className="w-full">
+                        Sign In
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
 
           <div className="flex md:hidden items-center gap-2">
@@ -170,14 +216,18 @@ export const Header = () => {
                 </Link>
               ))}
               
-              {/* Mobile User Info */}
+              {/* Mobile Profile */}
               <div className="pt-2 border-t border-white/10">
-                <div className="flex items-center gap-2 px-3 py-2 glass border border-white/10 rounded-lg">
+                <Button
+                  variant="ghost"
+                  className="w-full flex items-center gap-2 px-3 py-2 glass border border-white/10 rounded-lg justify-start"
+                  onClick={() => setProfileOpen(true)}
+                >
                   <User className="h-4 w-4 text-muted-foreground" />
                   <span className="text-xs font-mono truncate">
-                    {userId}
+                    {userId && !userId.startsWith('session_') ? 'Profile' : 'Sign In'}
                   </span>
-                </div>
+                </Button>
               </div>
             </nav>
           </div>
