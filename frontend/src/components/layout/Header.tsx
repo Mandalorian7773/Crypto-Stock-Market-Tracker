@@ -124,7 +124,6 @@ export const Header = () => {
 
   const navItems = [
     { path: '/', label: 'Dashboard' },
-    { path: '/portfolio', label: 'Portfolio' },
     { path: '/watchlist', label: 'Watchlist' },
   ];
 

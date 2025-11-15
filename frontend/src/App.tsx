@@ -7,7 +7,6 @@ import { Header } from '@/components/layout/Header';
 import { useFirebaseAuth } from '@/hooks/useFirebaseAuth';
 import Dashboard from './pages/Dashboard';
 import AssetDetails from './pages/AssetDetails';
-import Portfolio from './pages/Portfolio';
 import Watchlist from './pages/Watchlist';
 import NotFound from './pages/NotFound';
 
@@ -22,7 +21,6 @@ const AppContent = () => {
       <Routes>
         <Route path="/" element={<Dashboard />} />
         <Route path="/asset/:symbol" element={<AssetDetails />} />
-        <Route path="/portfolio" element={<Portfolio />} />
         <Route path="/watchlist" element={<Watchlist />} />
         <Route path="*" element={<NotFound />} />
       </Routes>

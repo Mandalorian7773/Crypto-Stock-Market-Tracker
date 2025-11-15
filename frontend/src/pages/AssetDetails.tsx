@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { Star, Plus } from 'lucide-react';
+import { Star } from 'lucide-react';
 import Plotly from 'plotly.js-dist-min';
 import axiosInstance from '@/lib/axios';
 import { Card } from '@/components/ui/card';
@@ -22,7 +22,6 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { useStore } from '@/store/useStore';
 import { PlotlyChart } from '@/components/charts/PlotlyChart';
-import { addToPortfolio } from '@/services/portfolioService';
 
 export default function AssetDetails() {
   const { symbol } = useParams<{ symbol: string }>();
@@ -30,9 +29,6 @@ export default function AssetDetails() {
   const [timeRange, setTimeRange] = useState('1M');
   const [showSMA, setShowSMA] = useState(false);
   const [showEMA, setShowEMA] = useState(false);
-  const [quantity, setQuantity] = useState('');
-  const [buyPrice, setBuyPrice] = useState('');
-  const [dialogOpen, setDialogOpen] = useState(false);
   const { watchlist, userId } = useStore();
   const { toast } = useToast();
 
@@ -401,34 +397,6 @@ export default function AssetDetails() {
     }
   };
 
-  const handleAddToPortfolio = async () => {
-    try {
-      if (!userId || userId.startsWith('session_')) {
-        toast({ title: 'Please sign in to add to portfolio', variant: 'destructive' });
-        return;
-      }
-
-      const result = await addToPortfolio(userId, {
-        symbol,
-        quantity: parseFloat(quantity),
-        buyPrice: parseFloat(buyPrice),
-        type: cryptoData ? 'crypto' : 'stock',
-        addedAt: new Date().toISOString()
-      });
-
-      if (result.success) {
-        toast({ title: 'Added to portfolio successfully' });
-        setDialogOpen(false);
-        setQuantity('');
-        setBuyPrice('');
-      } else {
-        toast({ title: 'Failed to add to portfolio', variant: 'destructive' });
-      }
-    } catch (error) {
-      toast({ title: 'Failed to add to portfolio', variant: 'destructive' });
-    }
-  };
-
   const chartData = historyData
     ? [
         {
@@ -524,50 +492,6 @@ export default function AssetDetails() {
             <Button variant="outline" size="icon" onClick={handleWatchlistToggle}>
               <Star className={`h-4 w-4 ${isInWatchlist ? 'fill-primary' : ''}`} />
             </Button>
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="gradient-primary">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add to Portfolio
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="glass border-white/10">
-                <DialogHeader>
-                  <DialogTitle>Add to Portfolio</DialogTitle>
-                  <DialogDescription>
-                    Enter the details for {symbol}
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <Label>Quantity</Label>
-                    <Input
-                      type="number"
-                      value={quantity}
-                      onChange={(e) => setQuantity(e.target.value)}
-                      placeholder="0"
-                      className="glass border-white/10"
-                    />
-                  </div>
-                  <div>
-                    <Label>Buy Price</Label>
-                    <Input
-                      type="number"
-                      value={buyPrice}
-                      onChange={(e) => setBuyPrice(e.target.value)}
-                      placeholder="0.00"
-                      className="glass border-white/10"
-                    />
-                  </div>
-                  <Button
-                    onClick={handleAddToPortfolio}
-                    className="w-full gradient-primary"
-                  >
-                    Add to Portfolio
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
           </div>
         </div>
 
