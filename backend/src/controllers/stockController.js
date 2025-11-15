@@ -1,4 +1,4 @@
-const alphaVantageService = require('../services/alphaVantageService');
+const finnhubService = require('../services/alphaVantageService');
 const { calculateSMA, calculateEMA, calculateROI } = require('../utils/analytics');
 
 async function searchStocks(req, res, next) {
@@ -11,14 +11,13 @@ async function searchStocks(req, res, next) {
       });
     }
     
-    const results = await alphaVantageService.searchSymbols(query);
+    const results = await finnhubService.searchSymbols(query);
     
     const formattedResults = results.map(item => ({
-      symbol: item['1. symbol'],
-      name: item['2. name'],
-      type: item['3. type'],
-      region: item['4. region'],
-      currency: item['8. currency']
+      symbol: item.symbol,
+      name: item.description,
+      type: item.type,
+      currency: item.currency
     }));
     
     res.json({
@@ -40,23 +39,16 @@ async function getStockQuote(req, res, next) {
       });
     }
     
-    const quote = await alphaVantageService.getQuote(symbol);
+    const quote = await finnhubService.getQuote(symbol);
     
     // Log the quote response for debugging
-    console.log('Alpha Vantage response for', symbol, ':', quote);
+    console.log('Finnhub response for', symbol, ':', quote);
     
     // Check for API errors in the response
-    if (quote['Error Message']) {
+    if (quote.error) {
       return res.status(400).json({
         success: false,
-        message: quote['Error Message']
-      });
-    }
-    
-    if (quote['Information']) {
-      return res.status(400).json({
-        success: false,
-        message: quote['Information']
+        message: quote.error
       });
     }
     
@@ -69,15 +61,15 @@ async function getStockQuote(req, res, next) {
     }
     
     const formattedQuote = {
-      symbol: quote['01. symbol'],
-      name: quote['01. symbol'], // Add name field for consistency
-      open: parseFloat(quote['02. open']),
-      high: parseFloat(quote['03. high']),
-      low: parseFloat(quote['04. low']),
-      price: parseFloat(quote['05. price']),
-      volume: parseInt(quote['06. volume']),
-      change: parseFloat(quote['09. change']),
-      changePercent: quote['10. change percent'] ? quote['10. change percent'].replace('%', '') : '0'
+      symbol: quote.symbol,
+      name: quote.name,
+      open: parseFloat(quote.open),
+      high: parseFloat(quote.dayHigh),
+      low: parseFloat(quote.dayLow),
+      price: parseFloat(quote.price),
+      volume: parseInt(quote.volume),
+      change: parseFloat(quote.change),
+      changePercent: quote.changePercent ? quote.changePercent.toString() : '0'
     };
     
     res.json({
@@ -102,7 +94,7 @@ async function getStockHistory(req, res, next) {
       });
     }
     
-    const history = await alphaVantageService.getHistory(symbol);
+    const history = await finnhubService.getHistory(symbol);
     
     if (!history || Object.keys(history).length === 0) {
       return res.status(404).json({
