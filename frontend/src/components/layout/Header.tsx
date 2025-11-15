@@ -25,7 +25,7 @@ export const Header = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [authMode, setAuthMode] = useState<'profile' | 'signin'>('profile');
 
@@ -85,18 +85,29 @@ export const Header = () => {
   const handleSignIn = (e: React.FormEvent) => {
     e.preventDefault();
     // Simple local authentication - in a real app, this would call an API
-    if (username && password) {
-      // Generate a user ID based on username
-      const userId = `user_${username.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()}`;
+    if (email && password) {
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        toast({ 
+          title: 'Sign in failed', 
+          description: 'Please enter a valid email address',
+          variant: 'destructive'
+        });
+        return;
+      }
+      
+      // Generate a user ID based on everything before @ in email
+      const userId = email.split('@')[0];
       setUserId(userId);
       setAuthMode('profile');
-      setUsername('');
+      setEmail('');
       setPassword('');
       toast({ title: 'Signed in successfully' });
     } else {
       toast({ 
         title: 'Sign in failed', 
-        description: 'Please enter both username and password',
+        description: 'Please enter both email and password',
         variant: 'destructive'
       });
     }
@@ -165,7 +176,7 @@ export const Header = () => {
               setProfileOpen(open);
               if (!open) {
                 setAuthMode('profile');
-                setUsername('');
+                setEmail('');
                 setPassword('');
               }
             }}>
@@ -176,7 +187,7 @@ export const Header = () => {
                 >
                   <User className="h-4 w-4 text-muted-foreground" />
                   <span className="text-xs font-mono truncate max-w-24">
-                    {userId && !userId.startsWith('session_') ? 'Profile' : 'Sign In'}
+                    {userId && !userId.startsWith('session_') ? userId : 'Sign In'}
                   </span>
                 </Button>
               </DialogTrigger>
@@ -195,9 +206,9 @@ export const Header = () => {
                           <p className="font-mono text-sm">{userId}</p>
                         </div>
                         <div>
-                          <p className="text-sm text-muted-foreground">Username</p>
+                          <p className="text-sm text-muted-foreground">Email</p>
                           <p className="text-sm">
-                            {userId.startsWith('user_') ? userId.substring(5) : 'N/A'}
+                            {userId}@example.com
                           </p>
                         </div>
                         <Button onClick={handleSignOut} variant="outline" className="w-full">
@@ -218,10 +229,10 @@ export const Header = () => {
                     <div className="space-y-4">
                       <div className="space-y-2">
                         <Input
-                          type="text"
-                          placeholder="Username"
-                          value={username}
-                          onChange={(e) => setUsername(e.target.value)}
+                          type="email"
+                          placeholder="Email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
                           className="glass border-white/10"
                         />
                         <Input
@@ -295,7 +306,7 @@ export const Header = () => {
                 >
                   <User className="h-4 w-4 text-muted-foreground" />
                   <span className="text-xs font-mono truncate">
-                    {userId && !userId.startsWith('session_') ? 'Profile' : 'Sign In'}
+                    {userId && !userId.startsWith('session_') ? userId : 'Sign In'}
                   </span>
                 </Button>
               </div>
