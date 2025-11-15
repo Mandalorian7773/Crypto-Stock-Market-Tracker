@@ -8,12 +8,6 @@ import { useNavigate } from 'react-router-dom';
 import axiosInstance from '@/lib/axios';
 import { useToast } from '@/hooks/use-toast';
 import { useStore } from '@/store/useStore';
-import { auth } from '@/lib/firebase';
-import { 
-  signInWithEmailAndPassword, 
-  signOut,
-  onAuthStateChanged
-} from 'firebase/auth';
 import {
   Dialog,
   DialogContent,
@@ -31,7 +25,7 @@ export const Header = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [authMode, setAuthMode] = useState<'profile' | 'signin'>('profile');
 
@@ -88,58 +82,32 @@ export const Header = () => {
     }
   };
 
-  const handleSignIn = async (e: React.FormEvent) => {
+  const handleSignIn = (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
-      toast({ title: 'Signed in successfully' });
+    // Simple local authentication - in a real app, this would call an API
+    if (username && password) {
+      // Generate a user ID based on username
+      const userId = `user_${username.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()}`;
+      setUserId(userId);
       setAuthMode('profile');
-      setEmail('');
+      setUsername('');
       setPassword('');
-    } catch (error: any) {
-      console.error('Sign in error:', error);
-      let errorMessage = 'Failed to sign in';
-      
-      switch (error.code) {
-        case 'auth/user-not-found':
-          errorMessage = 'No account found with this email';
-          break;
-        case 'auth/wrong-password':
-          errorMessage = 'Incorrect password';
-          break;
-        case 'auth/invalid-email':
-          errorMessage = 'Invalid email address';
-          break;
-        case 'auth/user-disabled':
-          errorMessage = 'This account has been disabled';
-          break;
-        case 'auth/configuration-not-found':
-          errorMessage = 'Authentication not configured. Please contact administrator.';
-          break;
-        default:
-          errorMessage = error.message || 'Failed to sign in';
-      }
-      
+      toast({ title: 'Signed in successfully' });
+    } else {
       toast({ 
         title: 'Sign in failed', 
-        description: errorMessage,
+        description: 'Please enter both username and password',
         variant: 'destructive'
       });
     }
   };
 
-  const handleSignOut = async () => {
-    try {
-      await signOut(auth);
-      toast({ title: 'Signed out successfully' });
-      setAuthMode('signin');
-    } catch (error: any) {
-      toast({ 
-        title: 'Sign out failed', 
-        description: error.message || 'Failed to sign out',
-        variant: 'destructive'
-      });
-    }
+  const handleSignOut = () => {
+    // Generate a new session ID when signing out
+    const sessionId = `session_${Math.random().toString(36).substr(2, 9)}`;
+    setUserId(sessionId);
+    setAuthMode('signin');
+    toast({ title: 'Signed out successfully' });
   };
 
   const navItems = [
@@ -197,7 +165,7 @@ export const Header = () => {
               setProfileOpen(open);
               if (!open) {
                 setAuthMode('profile');
-                setEmail('');
+                setUsername('');
                 setPassword('');
               }
             }}>
@@ -227,9 +195,9 @@ export const Header = () => {
                           <p className="font-mono text-sm">{userId}</p>
                         </div>
                         <div>
-                          <p className="text-sm text-muted-foreground">Email</p>
+                          <p className="text-sm text-muted-foreground">Username</p>
                           <p className="text-sm">
-                            {auth.currentUser?.email || 'No email available'}
+                            {userId.startsWith('user_') ? userId.substring(5) : 'N/A'}
                           </p>
                         </div>
                         <Button onClick={handleSignOut} variant="outline" className="w-full">
@@ -250,10 +218,10 @@ export const Header = () => {
                     <div className="space-y-4">
                       <div className="space-y-2">
                         <Input
-                          type="email"
-                          placeholder="Email"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
+                          type="text"
+                          placeholder="Username"
+                          value={username}
+                          onChange={(e) => setUsername(e.target.value)}
                           className="glass border-white/10"
                         />
                         <Input
@@ -268,7 +236,7 @@ export const Header = () => {
                         Sign In
                       </Button>
                       <p className="text-xs text-muted-foreground text-center">
-                        Sign in with your Firebase account
+                        Local authentication for demo purposes
                       </p>
                     </div>
                   )}
