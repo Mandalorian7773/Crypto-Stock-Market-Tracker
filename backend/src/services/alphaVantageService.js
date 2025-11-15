@@ -4,75 +4,7 @@ const cache = require('../utils/cache');
 const BASE_URL = 'https://finnhub.io/api/v1';
 const API_KEY = process.env.FINNHUB_API_KEY;
 
-// Mock data for when API is not available
-const mockStockData = {
-  'AAPL': {
-    'symbol': 'AAPL',
-    'name': 'Apple Inc',
-    'price': 153.25,
-    'change': 3.25,
-    'changePercent': 2.12,
-    'dayHigh': 155.00,
-    'dayLow': 149.00,
-    'open': 150.00,
-    'volume': 1000000
-  },
-  'MSFT': {
-    'symbol': 'MSFT',
-    'name': 'Microsoft Corporation',
-    'price': 302.50,
-    'change': 2.50,
-    'changePercent': 0.83,
-    'dayHigh': 305.00,
-    'dayLow': 299.00,
-    'open': 300.00,
-    'volume': 800000
-  },
-  'GOOGL': {
-    'symbol': 'GOOGL',
-    'name': 'Alphabet Inc',
-    'price': 2525.75,
-    'change': 25.75,
-    'changePercent': 1.03,
-    'dayHigh': 2550.00,
-    'dayLow': 2490.00,
-    'open': 2500.00,
-    'volume': 500000
-  },
-  'AMZN': {
-    'symbol': 'AMZN',
-    'name': 'Amazon.com Inc',
-    'price': 3225.50,
-    'change': 25.50,
-    'changePercent': 0.79,
-    'dayHigh': 3250.00,
-    'dayLow': 3190.00,
-    'open': 3200.00,
-    'volume': 600000
-  },
-  'TSLA': {
-    'symbol': 'TSLA',
-    'name': 'Tesla Inc',
-    'price': 810.25,
-    'change': 10.25,
-    'changePercent': 1.28,
-    'dayHigh': 820.00,
-    'dayLow': 795.00,
-    'open': 800.00,
-    'volume': 1200000
-  },
-  'NVDA': {
-    'symbol': 'NVDA',
-    'name': 'NVIDIA Corporation',
-    'price': 505.75,
-    'change': 5.75,
-    'changePercent': 1.15,
-    'dayHigh': 510.00,
-    'dayLow': 495.00,
-    'open': 500.00,
-    'volume': 900000
-  }
-};
+// Remove mock data - only use real API data now
 
 async function searchSymbols(query) {
   const cacheKey = `search_${query}`;
@@ -127,15 +59,12 @@ async function getQuote(symbol) {
     // Check if there's an error
     if (response.data.error) {
       console.log('Finnhub API error:', response.data.error);
-      // Use mock data when API fails
-      console.log('Using mock data for symbol:', symbol);
-      return mockStockData[symbol] || mockStockData['AAPL'];
+      throw new Error('API error: ' + response.data.error);
     }
     
     // Check if we have valid data
     if (!response.data || response.data.c === undefined) {
-      console.log('Empty response, using mock data for symbol:', symbol);
-      return mockStockData[symbol] || mockStockData['AAPL'];
+      throw new Error('Invalid API response');
     }
     
     // Format the response to match our expected structure
@@ -155,9 +84,7 @@ async function getQuote(symbol) {
     return formattedData;
   } catch (error) {
     console.error('Error fetching quote from Finnhub:', error.message);
-    // Return mock data when API fails
-    console.log('Using mock data for symbol due to error:', symbol);
-    return mockStockData[symbol] || mockStockData['AAPL'];
+    throw error;
   }
 }
 
@@ -187,12 +114,12 @@ async function getHistory(symbol) {
     // Check if there's an error
     if (response.data.error) {
       console.log('Finnhub API error:', response.data.error);
-      return {};
+      throw new Error('API error: ' + response.data.error);
     }
     
     // Check if we have valid data
     if (!response.data || response.data.s === 'no_data') {
-      return {};
+      throw new Error('No data available for this symbol');
     }
     
     // Format the response to match our expected structure
@@ -210,7 +137,7 @@ async function getHistory(symbol) {
     return result;
   } catch (error) {
     console.error('Error fetching history from Finnhub:', error.message);
-    return {};
+    throw error;
   }
 }
 

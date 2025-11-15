@@ -4,7 +4,7 @@ const cache = require('../utils/cache');
 const BASE_URL = 'https://api.coingecko.com/api/v3';
 const PRICE_ENDPOINT = '/simple/price';
 const MARKET_ENDPOINT = '/coins/markets';
-const API_KEY = process.env.COINGECKO_API_KEY || 'CG-pRDPVpeWdMwCsj7bHkqDeSg3';
+const API_KEY = process.env.COINGECKO_API_KEY; // Remove default API key
 
 async function getCryptoPrice(ids, currencies = 'usd,inr') {
   const cacheKey = `crypto_price_${ids}_${currencies}`;
@@ -28,6 +28,7 @@ async function getCryptoPrice(ids, currencies = 'usd,inr') {
     cache.set(cacheKey, result, 60);
     return result;
   } catch (error) {
+    console.error('Error fetching crypto price from CoinGecko:', error.message);
     throw error;
   }
 }
@@ -62,6 +63,7 @@ async function getCryptoMarketData(ids = '', currency = 'usd') {
     cache.set(cacheKey, result, 60);
     return result;
   } catch (error) {
+    console.error('Error fetching crypto market data from CoinGecko:', error.message);
     throw error;
   }
 }
