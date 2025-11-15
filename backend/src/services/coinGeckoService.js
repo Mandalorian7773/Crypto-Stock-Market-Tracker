@@ -32,7 +32,7 @@ async function getCryptoPrice(ids, currencies = 'usd,inr') {
   }
 }
 
-async function getCryptoMarketData(ids, currency = 'usd') {
+async function getCryptoMarketData(ids = '', currency = 'usd') {
   const cacheKey = `crypto_market_${ids}_${currency}`;
   const cachedResult = cache.get(cacheKey);
   
@@ -41,17 +41,21 @@ async function getCryptoMarketData(ids, currency = 'usd') {
   }
   
   try {
-    const response = await axios.get(BASE_URL + MARKET_ENDPOINT, {
-      params: {
-        vs_currency: currency,
-        ids: ids,
-        order: 'market_cap_desc',
-        per_page: 10,
-        page: 1,
-        sparkline: false,
-        x_cg_demo_api_key: API_KEY
-      }
-    });
+    const params = {
+      vs_currency: currency,
+      order: 'market_cap_desc',
+      per_page: 10,
+      page: 1,
+      sparkline: false,
+      x_cg_demo_api_key: API_KEY
+    };
+    
+    // Only add ids parameter if it's not empty
+    if (ids) {
+      params.ids = ids;
+    }
+    
+    const response = await axios.get(BASE_URL + MARKET_ENDPOINT, { params });
     
     const result = response.data || [];
     // Cache for 60 seconds (1 minute)

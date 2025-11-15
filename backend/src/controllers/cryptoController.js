@@ -46,15 +46,14 @@ async function getCryptoPrice(req, res, next) {
     console.log('Trying market data approach');
     if (marketData && marketData.length > 0) {
       console.log('Using market data for response');
-      const cryptoInfo = marketData[0];
       const response = {
-        symbol: cryptoInfo.symbol || cryptoId,
-        name: cryptoInfo.name || cryptoId,
-        usd: cryptoInfo.current_price || 0,
+        symbol: marketData[0].symbol || cryptoId,
+        name: marketData[0].name || cryptoId,
+        usd: marketData[0].current_price || 0,
         inr: null, // We don't fetch INR in market data
-        usd_24h_change: cryptoInfo.price_change_percentage_24h || 0,
-        usd_24h_vol: cryptoInfo.total_volume || 0,
-        usd_market_cap: cryptoInfo.market_cap || 0,
+        usd_24h_change: marketData[0].price_change_percentage_24h || 0,
+        usd_24h_vol: marketData[0].total_volume || 0,
+        usd_market_cap: marketData[0].market_cap || 0,
         lastUpdated: new Date().toISOString()
       };
       
@@ -146,6 +145,64 @@ async function getCryptoPrice(req, res, next) {
   }
 }
 
+async function getTopCryptos(req, res, next) {
+  try {
+    console.log('Fetching top cryptocurrencies...');
+    // Get top 10 cryptocurrencies by market cap
+    const marketData = await coinGeckoService.getCryptoMarketData('', 'usd');
+    console.log('Market data fetched, length:', marketData.length);
+    
+    if (!marketData || marketData.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No cryptocurrency data found'
+      });
+    }
+    
+    // Return the top 10 cryptocurrencies
+    const topCryptos = marketData.slice(0, 10).map(crypto => ({
+      id: crypto.id,
+      symbol: crypto.symbol,
+      name: crypto.name,
+      current_price: crypto.current_price,
+      price_change_percentage_24h: crypto.price_change_percentage_24h,
+      total_volume: crypto.total_volume,
+      market_cap: crypto.market_cap,
+      image: crypto.image
+    }));
+    
+    res.json({
+      success: true,
+      data: topCryptos
+    });
+  } catch (error) {
+    // Handle specific error cases
+    if (error.response) {
+      // The request was made and the server responded with a status code
+      // that falls out of the range of 2xx
+      if (error.response.status === 429) {
+        return res.status(429).json({
+          success: false,
+          message: 'Rate limit exceeded. Please try again later.'
+        });
+      } else if (error.response.status >= 500) {
+        return res.status(500).json({
+          success: false,
+          message: 'CoinGecko API is temporarily unavailable. Please try again later.'
+        });
+      }
+    }
+    
+    // Handle network errors or other issues
+    console.error('Error fetching top cryptocurrencies:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch top cryptocurrencies'
+    });
+  }
+}
+
 module.exports = {
-  getCryptoPrice
+  getCryptoPrice,
+  getTopCryptos
 };

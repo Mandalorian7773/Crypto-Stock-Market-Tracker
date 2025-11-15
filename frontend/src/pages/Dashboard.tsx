@@ -1,7 +1,6 @@
 import { motion } from 'framer-motion';
 import { AssetCard } from '@/components/cards/AssetCard';
 import { useQuery } from '@tanstack/react-query';
-import axios from 'axios';
 import axiosInstance from '@/lib/axios';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -9,27 +8,8 @@ export default function Dashboard() {
   const { data: cryptoData, isLoading: cryptoLoading } = useQuery({
     queryKey: ['crypto-list'],
     queryFn: async () => {
-      const topCryptosResponse = await axios.get(
-        'https://api.coingecko.com/api/v3/coins/markets',
-        {
-          params: {
-            vs_currency: 'usd',
-            order: 'market_cap_desc',
-            per_page: 10,
-            page: 1,
-            sparkline: false,
-          },
-        }
-      );
-      
-      const topCryptoIds = topCryptosResponse.data.map((crypto: any) => crypto.id).join(',');
-      
-      const pricesResponse = await axiosInstance.get(`/api/crypto/price?cryptoId=${topCryptoIds}`);
-      
-      return topCryptosResponse.data.map((crypto: any) => ({
-        ...crypto,
-        current_price: pricesResponse.data.prices?.[crypto.id]?.usd || crypto.current_price,
-      }));
+      const response = await axiosInstance.get('/api/crypto/top');
+      return response.data.data;
     },
     refetchInterval: 60000,
     staleTime: 30000,
