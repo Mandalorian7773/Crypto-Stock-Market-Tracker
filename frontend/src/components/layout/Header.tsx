@@ -97,9 +97,8 @@ export const Header = () => {
         return;
       }
       
-      // Generate a user ID based on everything before @ in email
-      const userId = email.split('@')[0];
-      setUserId(userId);
+      // Store the full email and set user ID to everything before @
+      setUserId(email); // Store full email
       setAuthMode('profile');
       setEmail('');
       setPassword('');
@@ -187,7 +186,7 @@ export const Header = () => {
                 >
                   <User className="h-4 w-4 text-muted-foreground" />
                   <span className="text-xs font-mono truncate max-w-24">
-                    {userId && !userId.startsWith('session_') ? userId : 'Sign In'}
+                    {userId && !userId.startsWith('session_') ? userId.split('@')[0] : 'Sign In'}
                   </span>
                 </Button>
               </DialogTrigger>
@@ -203,12 +202,12 @@ export const Header = () => {
                       <div className="space-y-4">
                         <div>
                           <p className="text-sm text-muted-foreground">User ID</p>
-                          <p className="font-mono text-sm">{userId}</p>
+                          <p className="font-mono text-sm">{userId.split('@')[0]}</p>
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground">Email</p>
                           <p className="text-sm">
-                            {userId}@example.com
+                            {userId}
                           </p>
                         </div>
                         <Button onClick={handleSignOut} variant="outline" className="w-full">
@@ -306,7 +305,7 @@ export const Header = () => {
                 >
                   <User className="h-4 w-4 text-muted-foreground" />
                   <span className="text-xs font-mono truncate">
-                    {userId && !userId.startsWith('session_') ? userId : 'Sign In'}
+                    {userId && !userId.startsWith('session_') ? userId.split('@')[0] : 'Sign In'}
                   </span>
                 </Button>
               </div>
