@@ -7,15 +7,28 @@ import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import axios from 'axios';
+import { useStore } from '@/store/useStore';
+import { getPortfolio, removeFromPortfolio } from '@/services/portfolioService';
 
 export default function Portfolio() {
   const { toast } = useToast();
+  const userId = useStore((state) => state.userId);
 
   const { data: portfolio, isLoading, refetch } = useQuery({
-    queryKey: ['portfolio'],
+    queryKey: ['portfolio', userId],
     queryFn: async () => {
-      const response = await axiosInstance.get('/api/portfolio/list');
-      const items = response.data;
+      if (!userId || userId.startsWith('session_')) {
+        return [];
+      }
+
+      // Fetch portfolio from Firebase
+      const result = await getPortfolio(userId);
+      if (!result.success) {
+        toast({ title: 'Failed to load portfolio', variant: 'destructive' });
+        return [];
+      }
+
+      const items = result.data;
 
       const enrichedItems = await Promise.all(
         items.map(async (item: any) => {
@@ -57,13 +70,23 @@ export default function Portfolio() {
     },
     refetchInterval: 60000,
     staleTime: 30000,
+    enabled: !!userId && !userId.startsWith('session_'),
   });
 
-  const handleRemove = async (symbol: string) => {
+  const handleRemove = async (symbol: string, type: string) => {
     try {
-      await axiosInstance.delete(`/api/portfolio/remove/${symbol}`);
-      toast({ title: 'Removed from portfolio' });
-      refetch();
+      if (!userId || userId.startsWith('session_')) {
+        toast({ title: 'Please sign in to manage portfolio', variant: 'destructive' });
+        return;
+      }
+
+      const result = await removeFromPortfolio(userId, symbol, type);
+      if (result.success) {
+        toast({ title: 'Removed from portfolio' });
+        refetch();
+      } else {
+        toast({ title: 'Failed to remove', variant: 'destructive' });
+      }
     } catch (error) {
       toast({ title: 'Failed to remove', variant: 'destructive' });
     }
@@ -145,14 +168,14 @@ export default function Portfolio() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {portfolio.map((item: any) => (
               <PortfolioItemCard
-                key={item.symbol}
+                key={`${item.symbol}-${item.type}`}
                 symbol={item.symbol}
                 quantity={item.quantity}
                 buyPrice={item.buyPrice}
                 currentPrice={item.currentPrice}
                 profitLoss={item.profitLoss}
                 roiPercent={item.roiPercent}
-                onRemove={() => handleRemove(item.symbol)}
+                onRemove={() => handleRemove(item.symbol, item.type)}
               />
             ))}
           </div>
@@ -160,7 +183,9 @@ export default function Portfolio() {
       ) : (
         <Card className="glass p-8 sm:p-12 text-center border-white/10">
           <p className="text-muted-foreground">
-            Your portfolio is empty. Add some assets to get started!
+            {userId && !userId.startsWith('session_') 
+              ? "Your portfolio is empty. Add some assets to get started!" 
+              : "Please sign in to view and manage your portfolio!"}
           </p>
         </Card>
       )}

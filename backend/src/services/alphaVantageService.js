@@ -1,70 +1,76 @@
 const axios = require('axios');
 const cache = require('../utils/cache');
 
-const BASE_URL = 'https://www.alphavantage.co/query';
-const API_KEY = process.env.ALPHA_VANTAGE_KEY;
+const BASE_URL = 'https://finnhub.io/api/v1';
+const API_KEY = process.env.FINNHUB_API_KEY;
 
 // Mock data for when API is not available
 const mockStockData = {
   'AAPL': {
-    '01. symbol': 'AAPL',
-    '02. open': '150.00',
-    '03. high': '155.00',
-    '04. low': '149.00',
-    '05. price': '153.25',
-    '06. volume': '1000000',
-    '09. change': '3.25',
-    '10. change percent': '2.12%'
+    'symbol': 'AAPL',
+    'name': 'Apple Inc',
+    'price': 153.25,
+    'change': 3.25,
+    'changePercent': 2.12,
+    'dayHigh': 155.00,
+    'dayLow': 149.00,
+    'open': 150.00,
+    'volume': 1000000
   },
   'MSFT': {
-    '01. symbol': 'MSFT',
-    '02. open': '300.00',
-    '03. high': '305.00',
-    '04. low': '299.00',
-    '05. price': '302.50',
-    '06. volume': '800000',
-    '09. change': '2.50',
-    '10. change percent': '0.83%'
+    'symbol': 'MSFT',
+    'name': 'Microsoft Corporation',
+    'price': 302.50,
+    'change': 2.50,
+    'changePercent': 0.83,
+    'dayHigh': 305.00,
+    'dayLow': 299.00,
+    'open': 300.00,
+    'volume': 800000
   },
   'GOOGL': {
-    '01. symbol': 'GOOGL',
-    '02. open': '2500.00',
-    '03. high': '2550.00',
-    '04. low': '2490.00',
-    '05. price': '2525.75',
-    '06. volume': '500000',
-    '09. change': '25.75',
-    '10. change percent': '1.03%'
+    'symbol': 'GOOGL',
+    'name': 'Alphabet Inc',
+    'price': 2525.75,
+    'change': 25.75,
+    'changePercent': 1.03,
+    'dayHigh': 2550.00,
+    'dayLow': 2490.00,
+    'open': 2500.00,
+    'volume': 500000
   },
   'AMZN': {
-    '01. symbol': 'AMZN',
-    '02. open': '3200.00',
-    '03. high': '3250.00',
-    '04. low': '3190.00',
-    '05. price': '3225.50',
-    '06. volume': '600000',
-    '09. change': '25.50',
-    '10. change percent': '0.79%'
+    'symbol': 'AMZN',
+    'name': 'Amazon.com Inc',
+    'price': 3225.50,
+    'change': 25.50,
+    'changePercent': 0.79,
+    'dayHigh': 3250.00,
+    'dayLow': 3190.00,
+    'open': 3200.00,
+    'volume': 600000
   },
   'TSLA': {
-    '01. symbol': 'TSLA',
-    '02. open': '800.00',
-    '03. high': '820.00',
-    '04. low': '795.00',
-    '05. price': '810.25',
-    '06. volume': '1200000',
-    '09. change': '10.25',
-    '10. change percent': '1.28%'
+    'symbol': 'TSLA',
+    'name': 'Tesla Inc',
+    'price': 810.25,
+    'change': 10.25,
+    'changePercent': 1.28,
+    'dayHigh': 820.00,
+    'dayLow': 795.00,
+    'open': 800.00,
+    'volume': 1200000
   },
   'NVDA': {
-    '01. symbol': 'NVDA',
-    '02. open': '500.00',
-    '03. high': '510.00',
-    '04. low': '495.00',
-    '05. price': '505.75',
-    '06. volume': '900000',
-    '09. change': '5.75',
-    '10. change percent': '1.15%'
+    'symbol': 'NVDA',
+    'name': 'NVIDIA Corporation',
+    'price': 505.75,
+    'change': 5.75,
+    'changePercent': 1.15,
+    'dayHigh': 510.00,
+    'dayLow': 495.00,
+    'open': 500.00,
+    'volume': 900000
   }
 };
 
@@ -77,26 +83,24 @@ async function searchSymbols(query) {
   }
   
   try {
-    const response = await axios.get(BASE_URL, {
+    const response = await axios.get(`${BASE_URL}/search`, {
       params: {
-        function: 'SYMBOL_SEARCH',
-        keywords: query,
-        apikey: API_KEY
+        q: query,
+        token: API_KEY
       }
     });
     
-    // Check if there's an error or information message
-    if (response.data['Error Message'] || response.data['Information']) {
-      // Return empty array if API fails
+    // Check if there's an error
+    if (response.data.error) {
+      console.log('Finnhub API error:', response.data.error);
       return [];
     }
     
-    const result = response.data.bestMatches || [];
+    const result = response.data.result || [];
     cache.set(cacheKey, result);
     return result;
   } catch (error) {
     console.error('Error searching symbols:', error.message);
-    // Return empty array if API fails
     return [];
   }
 }
@@ -110,41 +114,50 @@ async function getQuote(symbol) {
   }
   
   try {
-    const response = await axios.get(BASE_URL, {
+    const response = await axios.get(`${BASE_URL}/quote`, {
       params: {
-        function: 'GLOBAL_QUOTE',
         symbol: symbol,
-        apikey: API_KEY
+        token: API_KEY
       }
     });
     
     // Log the raw response for debugging
-    console.log('Alpha Vantage raw response:', response.data);
+    console.log('Finnhub raw response:', response.data);
     
-    // Check if there's an error or information message
-    if (response.data['Error Message']) {
-      throw new Error(response.data['Error Message']);
-    }
-    
-    if (response.data['Information']) {
-      throw new Error(response.data['Information']);
-    }
-    
-    const result = response.data['Global Quote'] || {};
-    
-    // If we got empty data, return mock data
-    if (!result || Object.keys(result).length === 0) {
+    // Check if there's an error
+    if (response.data.error) {
+      console.log('Finnhub API error:', response.data.error);
+      // Use mock data when API fails
       console.log('Using mock data for symbol:', symbol);
-      return mockStockData[symbol] || mockStockData['AAPL']; // fallback to AAPL if symbol not found
+      return mockStockData[symbol] || mockStockData['AAPL'];
     }
     
-    cache.set(cacheKey, result);
-    return result;
+    // Check if we have valid data
+    if (!response.data || response.data.c === undefined) {
+      console.log('Empty response, using mock data for symbol:', symbol);
+      return mockStockData[symbol] || mockStockData['AAPL'];
+    }
+    
+    // Format the response to match our expected structure
+    const formattedData = {
+      symbol: symbol,
+      name: symbol, // Finnhub doesn't provide name in quote endpoint
+      price: response.data.c,
+      change: response.data.d,
+      changePercent: response.data.dp,
+      dayHigh: response.data.h,
+      dayLow: response.data.l,
+      open: response.data.o,
+      volume: response.data.v
+    };
+    
+    cache.set(cacheKey, formattedData);
+    return formattedData;
   } catch (error) {
-    console.error('Error fetching quote from Alpha Vantage:', error.message);
+    console.error('Error fetching quote from Finnhub:', error.message);
     // Return mock data when API fails
-    console.log('Using mock data for symbol:', symbol);
-    return mockStockData[symbol] || mockStockData['AAPL']; // fallback to AAPL if symbol not found
+    console.log('Using mock data for symbol due to error:', symbol);
+    return mockStockData[symbol] || mockStockData['AAPL'];
   }
 }
 
@@ -157,35 +170,46 @@ async function getHistory(symbol) {
   }
   
   try {
-    const response = await axios.get(BASE_URL, {
+    // Get data for the last 30 days
+    const to = Math.floor(Date.now() / 1000);
+    const from = to - (30 * 24 * 60 * 60); // 30 days ago
+    
+    const response = await axios.get(`${BASE_URL}/stock/candle`, {
       params: {
-        function: 'TIME_SERIES_DAILY',
         symbol: symbol,
-        apikey: API_KEY
+        resolution: 'D',
+        from: from,
+        to: to,
+        token: API_KEY
       }
     });
     
-    // Check if there's an error or information message
-    if (response.data['Error Message']) {
-      throw new Error(response.data['Error Message']);
-    }
-    
-    if (response.data['Information']) {
-      throw new Error(response.data['Information']);
-    }
-    
-    const result = response.data['Time Series (Daily)'] || {};
-    
-    // If we got empty data, return empty object
-    if (!result || Object.keys(result).length === 0) {
+    // Check if there's an error
+    if (response.data.error) {
+      console.log('Finnhub API error:', response.data.error);
       return {};
+    }
+    
+    // Check if we have valid data
+    if (!response.data || response.data.s === 'no_data') {
+      return {};
+    }
+    
+    // Format the response to match our expected structure
+    const result = {};
+    if (response.data.t && response.data.c) {
+      for (let i = 0; i < response.data.t.length; i++) {
+        const date = new Date(response.data.t[i] * 1000).toISOString().split('T')[0];
+        result[date] = {
+          '4. close': response.data.c[i]
+        };
+      }
     }
     
     cache.set(cacheKey, result);
     return result;
   } catch (error) {
-    console.error('Error fetching history from Alpha Vantage:', error.message);
-    // Return empty object when API fails
+    console.error('Error fetching history from Finnhub:', error.message);
     return {};
   }
 }

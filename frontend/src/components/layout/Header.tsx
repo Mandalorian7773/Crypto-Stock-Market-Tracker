@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { TrendingUp, Search, Menu, X } from 'lucide-react';
+import { TrendingUp, Search, Menu, X, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { motion } from 'framer-motion';
@@ -7,13 +7,28 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '@/lib/axios';
 import { useToast } from '@/hooks/use-toast';
+import { useStore } from '@/store/useStore';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 
 export const Header = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const userId = useStore((state) => state.userId);
+  const setUserId = useStore((state) => state.setUserId);
+  const setWatchlist = useStore((state) => state.setWatchlist);
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [authMode, setAuthMode] = useState<'profile' | 'signin'>('profile');
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -68,6 +83,45 @@ export const Header = () => {
     }
   };
 
+  const handleSignIn = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Simple local authentication - in a real app, this would call an API
+    if (email && password) {
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        toast({ 
+          title: 'Sign in failed', 
+          description: 'Please enter a valid email address',
+          variant: 'destructive'
+        });
+        return;
+      }
+      
+      // Store the full email and set user ID to everything before @
+      setUserId(email); // Store full email
+      setAuthMode('profile');
+      setEmail('');
+      setPassword('');
+      toast({ title: 'Signed in successfully' });
+    } else {
+      toast({ 
+        title: 'Sign in failed', 
+        description: 'Please enter both email and password',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleSignOut = () => {
+    // Generate a new session ID when signing out
+    const sessionId = `session_${Math.random().toString(36).substr(2, 9)}`;
+    setUserId(sessionId);
+    setWatchlist([]); // Clear the watchlist for anonymous user
+    setAuthMode('signin');
+    toast({ title: 'Signed out successfully' });
+  };
+
   const navItems = [
     { path: '/', label: 'Dashboard' },
     { path: '/portfolio', label: 'Portfolio' },
@@ -117,6 +171,90 @@ export const Header = () => {
                 </Button>
               </Link>
             ))}
+            
+            {/* Clickable Profile */}
+            <Dialog open={profileOpen} onOpenChange={(open) => {
+              setProfileOpen(open);
+              if (!open) {
+                setAuthMode('profile');
+                setEmail('');
+                setPassword('');
+              }
+            }}>
+              <DialogTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="flex items-center gap-2 px-3 py-2 glass border border-white/10 rounded-lg"
+                >
+                  <User className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-xs font-mono truncate max-w-24">
+                    {userId && !userId.startsWith('session_') ? userId.split('@')[0] : 'Sign In'}
+                  </span>
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="glass border-white/10">
+                <DialogHeader>
+                  <DialogTitle>
+                    {authMode === 'profile' ? 'User Profile' : 'Sign In'}
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="py-4">
+                  {authMode === 'profile' ? (
+                    userId && !userId.startsWith('session_') ? (
+                      <div className="space-y-4">
+                        <div>
+                          <p className="text-sm text-muted-foreground">User ID</p>
+                          <p className="font-mono text-sm">{userId.split('@')[0]}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Email</p>
+                          <p className="text-sm">
+                            {userId}
+                          </p>
+                        </div>
+                        <Button onClick={handleSignOut} variant="outline" className="w-full">
+                          Sign Out
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <p className="text-sm text-muted-foreground">
+                          Not signed in. Using session ID: {userId}
+                        </p>
+                        <Button onClick={() => setAuthMode('signin')} className="w-full">
+                          Sign In
+                        </Button>
+                      </div>
+                    )
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Input
+                          type="email"
+                          placeholder="Email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          className="glass border-white/10"
+                        />
+                        <Input
+                          type="password"
+                          placeholder="Password"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          className="glass border-white/10"
+                        />
+                      </div>
+                      <Button onClick={handleSignIn} className="w-full">
+                        Sign In
+                      </Button>
+                      <p className="text-xs text-muted-foreground text-center">
+                        Local authentication for demo purposes
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
 
           <div className="flex md:hidden items-center gap-2">
@@ -159,6 +297,20 @@ export const Header = () => {
                   </Button>
                 </Link>
               ))}
+              
+              {/* Mobile Profile */}
+              <div className="pt-2 border-t border-white/10">
+                <Button
+                  variant="ghost"
+                  className="w-full flex items-center gap-2 px-3 py-2 glass border border-white/10 rounded-lg justify-start"
+                  onClick={() => setProfileOpen(true)}
+                >
+                  <User className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-xs font-mono truncate">
+                    {userId && !userId.startsWith('session_') ? userId.split('@')[0] : 'Sign In'}
+                  </span>
+                </Button>
+              </div>
             </nav>
           </div>
         )}
