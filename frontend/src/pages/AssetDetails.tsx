@@ -1,16 +1,15 @@
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { PlotlyChart } from '@/components/charts/PlotlyChart';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Star } from 'lucide-react';
-import { useState } from 'react';
-import { useStore } from '@/store/useStore';
-import { useToast } from '@/hooks/use-toast';
-import axios from 'axios';
+import { Star, Plus } from 'lucide-react';
+import Plotly from 'plotly.js-dist-min';
 import axiosInstance from '@/lib/axios';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Dialog,
@@ -20,8 +19,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
+import { useStore } from '@/store/useStore';
+import { PlotlyChart } from '@/components/charts/PlotlyChart';
+import { addToPortfolio } from '@/services/portfolioService';
 
 export default function AssetDetails() {
   const { symbol } = useParams<{ symbol: string }>();
@@ -32,7 +33,7 @@ export default function AssetDetails() {
   const [quantity, setQuantity] = useState('');
   const [buyPrice, setBuyPrice] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
-  const { watchlist, addToWatchlist, removeFromWatchlist } = useStore();
+  const { watchlist, userId } = useStore();
   const { toast } = useToast();
 
   const isInWatchlist = watchlist.includes(symbol || '');
@@ -370,26 +371,37 @@ export default function AssetDetails() {
 
   const handleWatchlistToggle = () => {
     if (isInWatchlist) {
-      removeFromWatchlist(symbol || '');
+      useStore.getState().removeFromWatchlist(symbol || '');
       toast({ title: 'Removed from watchlist' });
     } else {
-      addToWatchlist(symbol || '');
+      useStore.getState().addToWatchlist(symbol || '');
       toast({ title: 'Added to watchlist' });
     }
   };
 
   const handleAddToPortfolio = async () => {
     try {
-      await axiosInstance.post('/api/portfolio/add', {
+      if (!userId || userId.startsWith('session_')) {
+        toast({ title: 'Please sign in to add to portfolio', variant: 'destructive' });
+        return;
+      }
+
+      const result = await addToPortfolio(userId, {
         symbol,
         quantity: parseFloat(quantity),
         buyPrice: parseFloat(buyPrice),
         type: cryptoData ? 'crypto' : 'stock',
+        addedAt: new Date().toISOString()
       });
-      toast({ title: 'Added to portfolio successfully' });
-      setDialogOpen(false);
-      setQuantity('');
-      setBuyPrice('');
+
+      if (result.success) {
+        toast({ title: 'Added to portfolio successfully' });
+        setDialogOpen(false);
+        setQuantity('');
+        setBuyPrice('');
+      } else {
+        toast({ title: 'Failed to add to portfolio', variant: 'destructive' });
+      }
     } catch (error) {
       toast({ title: 'Failed to add to portfolio', variant: 'destructive' });
     }
