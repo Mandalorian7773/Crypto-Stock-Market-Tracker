@@ -126,7 +126,6 @@ export const Header = () => {
     { path: '/', label: 'Dashboard' },
     { path: '/portfolio', label: 'Portfolio' },
     { path: '/watchlist', label: 'Watchlist' },
-    { path: '/leaderboard', label: 'Leaderboard' },
   ];
 
   return (
