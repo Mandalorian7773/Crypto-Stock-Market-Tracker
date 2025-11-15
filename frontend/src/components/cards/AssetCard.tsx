@@ -17,15 +17,22 @@ export const AssetCard = ({ symbol, name, price, change24h, type }: AssetCardPro
 
   const validPrice = typeof price === 'number' && !isNaN(price) ? price : 0;
   const validChange24h = typeof change24h === 'number' && !isNaN(change24h) ? change24h : 0;
+  const isValidSymbol = symbol && symbol !== 'N/A';
+
+  const handleClick = () => {
+    if (isValidSymbol) {
+      navigate(`/asset/${symbol}`);
+    }
+  };
 
   return (
     <motion.div
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
-      onClick={() => navigate(`/asset/${symbol}`)}
-      className="cursor-pointer"
+      whileHover={{ scale: isValidSymbol ? 1.02 : 1 }}
+      whileTap={{ scale: isValidSymbol ? 0.98 : 1 }}
+      onClick={handleClick}
+      className={`cursor-${isValidSymbol ? 'pointer' : 'not-allowed'}`}
     >
-      <Card className="glass p-4 border-white/10 hover:border-primary/50 transition-all">
+      <Card className={`glass p-4 border-white/10 ${isValidSymbol ? 'hover:border-primary/50' : ''} transition-all`}>
         <div className="flex items-start justify-between mb-2">
           <div>
             <p className="text-xs sm:text-sm text-muted-foreground uppercase">{type}</p>

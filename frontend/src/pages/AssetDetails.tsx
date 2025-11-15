@@ -38,165 +38,175 @@ export default function AssetDetails() {
 
   const isInWatchlist = watchlist.includes(symbol || '');
 
+  // Determine if this is a cryptocurrency or stock based on the symbol
+  const isCrypto = symbol ? 
+    ['BTC', 'ETH', 'BNB', 'SOL', 'XRP', 'DOGE', 'ADA', 'AVAX', 'DOT', 'LINK', 'LTC', 'BCH', 'UNI', 'MATIC', 'XLM', 'VET', 'ICP', 'FIL', 'TRX', 'XTZ', 'ATOM', 'THETA', 'FTM', 'NEAR', 'EGLD', 'ALGO', 'HBAR', 'AXS', 'MANA', 'SAND', 'ENJ', 'GALA', 'FLOW', 'APE', 'CHZ', 'DENT', 'ONE', 'CRV', 'ZIL', 'BAT', 'COMP', 'MKR', 'AAVE', 'SNX', 'YFI', 'KSM', 'DOT', 'KAVA', 'SRM', 'REN', 'LRC', 'BNT', 'NMR', 'MLN', 'GNO', 'RLC', 'CTSI', 'MINA', 'CVC', 'STORJ', 'BAND', 'NKN', 'OCEAN', 'UTK', 'NCT', 'AGIX', 'RLY', 'RARI', 'RAD', 'API3', 'FET', 'PLA', 'ILV', 'YGG', 'GODS', 'STARL', 'ATLAS', 'POLIS', 'MV', 'HIGH', 'DAR', 'ERN', 'KP3R', 'LQTY', 'FLUX', 'PERP', 'BADGER', 'SPELL', 'FXS', 'CVX', 'T', 'GST', 'GRT', 'LDO', 'IMX', 'GAL', 'DYDX', 'ENS', '1INCH', 'ZRX', 'SUSHI', 'CRV', 'BAL', 'LRC', 'BOND', 'JASMY', 'SUPER', 'IDEX', 'POLS', 'REQ', 'ADX', 'CTXC', 'STMX', 'XEM', 'WAXP', 'SC', 'KDA', 'XDC', 'HNT', 'HIVE', 'VLX', 'COTI', 'CHR', 'STPT', 'ORN', 'MDT', 'TLM', 'ALICE', 'XCH', 'PUNDIX', 'PROM', 'SYS', 'ARDR', 'KMD', 'ARK', 'NULS', 'WAN', 'QNT', 'BTS', 'LSK', 'ICX', 'DGB', 'XMR', 'ETC', 'ZEC', 'DASH', 'NANO', 'XEM', 'WAVES', 'QTUM', 'ZIL', 'ONT', 'IOTA', 'XLM', 'NEO', 'XRP', 'ETH', 'BTC'].includes(symbol.toUpperCase()) : 
+    false;
+
+  const cryptoIdMap: Record<string, string> = {
+    'btc': 'bitcoin',
+    'eth': 'ethereum',
+    'usdt': 'tether',
+    'xrp': 'ripple',
+    'usdc': 'usd-coin',
+    'doge': 'dogecoin',
+    'ada': 'cardano',
+    'sol': 'solana',
+    'trx': 'tron',
+    'dot': 'polkadot',
+    'matic': 'polygon',
+    'ltc': 'litecoin',
+    'shib': 'shiba-inu',
+    'avax': 'avalanche',
+    'uni': 'uniswap',
+    'bch': 'bitcoin-cash',
+    'link': 'chainlink',
+    'atom': 'cosmos',
+    'etc': 'ethereum-classic',
+    'near': 'near',
+    'xlm': 'stellar',
+    'algo': 'algorand',
+    'vet': 'vechain',
+    'icp': 'internet-computer',
+    'fil': 'filecoin',
+    'ape': 'apecoin',
+    'hbar': 'hedera',
+    'mana': 'decentraland',
+    'sand': 'the-sandbox',
+    'xtz': 'tezos',
+    'theta': 'theta-token',
+    'egld': 'elrond',
+    'eos': 'eos',
+    'aave': 'aave',
+    'chz': 'chiliz',
+    'hnt': 'helium',
+    'flow': 'flow',
+    'axs': 'axie-infinity',
+    'zec': 'zcash',
+    'bld': 'agoric',
+    'gala': 'gala',
+    'crv': 'curve-dao-token',
+    'tusd': 'true-usd',
+    'kcs': 'kucoin-token',
+    'cake': 'pancakeswap',
+    'bsv': 'bitcoin-sv',
+    'ftt': 'ftx-token',
+    'btt': 'bittorrent',
+    'dash': 'dash',
+    'neo': 'neo',
+    'snx': 'synthetix-network-token',
+    'comp': 'compound',
+    'waves': 'waves',
+    'zil': 'zilliqa',
+    'xmr': 'monero',
+    'bat': 'basic-attention-token',
+    'enj': 'enjincoin',
+    'dcr': 'decred',
+    'lrc': 'loopring',
+    'yfi': 'yearn-finance',
+    '1inch': '1inch',
+    'hot': 'holotoken',
+    'celo': 'celo',
+    'rose': 'oasis-network',
+    'sc': 'siacoin',
+    'rvn': 'ravencoin',
+    'htr': 'hathor',
+    'kava': 'kava',
+    'gmt': 'stepn',
+    'audio': 'audius',
+    'ankr': 'ankr',
+    'sushi': 'sushi',
+    'one': 'harmony',
+    'gno': 'gnosis',
+    'jst': 'just',
+    'bal': 'balancer',
+    'lpt': 'livepeer',
+    'glm': 'golem',
+    'api3': 'api3',
+    'stx': 'blockstack',
+    'dydx': 'dydx',
+    'fxs': 'frax-share',
+    'cvx': 'convex-finance',
+    'twt': 'trust-wallet-token',
+    'flux': 'zelcash',
+    'mina': 'mina',
+    'gtc': 'gitcoin',
+    'luna': 'terra-luna',
+    'ust': 'terrausd',
+    'spell': 'spell-token',
+    'metis': 'metis-token',
+    'fx': 'function-x',
+    'rune': 'thorchain',
+    'scrt': 'secret',
+    'inj': 'injective-protocol',
+    'rpl': 'rocket-pool',
+    'juno': 'juno-network',
+    'ldo': 'lido-dao',
+    'gmx': 'gmx',
+    'woo': 'wootrade',
+    'pendle': 'pendle',
+    'magic': 'magic',
+    'rad': 'radicle',
+    'super': 'superfarm',
+    'syn': 'synapse-2',
+    'mult': 'multichain',
+    'pyr': 'vulcan-forged',
+    'alice': 'my-neighbor-alice',
+    'epx': 'ellipsis',
+    'mask': 'mask-network',
+    'slp': 'smooth-love-potion',
+    'chr': 'chromia',
+    'pundix': 'pundix',
+    'coti': 'coti',
+    'nexo': 'nexo',
+    'stg': 'stargate-finance',
+    'celr': 'celer-network',
+    'arpa': 'arpa-chain',
+    'ocean': 'ocean-protocol',
+    'skl': 'skale',
+    'agld': 'adventure-gold',
+    'dar': 'mines-of-dalarnia',
+    'jasmy': 'jasmycoin',
+    'ach': 'alchemy-pay',
+    'lqty': 'liquity',
+    'cvp': 'powerpool',
+    'perp': 'perpetual-protocol',
+    'badger': 'badger-dao',
+    'dfi': 'defichain',
+    'rly': 'rally-2',
+    'band': 'band-protocol',
+    'pols': 'polkastarter',
+    'tlm': 'alien-worlds',
+    'dnt': 'district0x',
+    'powr': 'power-ledger',
+    'req': 'request-network',
+    'rlc': 'iexec-rlc',
+    'cvc': 'civic',
+    'mkr': 'maker',
+    'srm': 'serum',
+    'knc': 'kyber-network-crystal',
+    'zrx': '0x',
+    'ren': 'republic-protocol',
+    'uma': 'uma',
+    'fet': 'fetch',
+    'oxt': 'orchid',
+    'nkn': 'nkn',
+    'storj': 'storj',
+    'bnt': 'bancor',
+    'nmr': 'numeraire',
+    'grt': 'the-graph',
+    'ftm': 'fantom'
+  };
+
   const { data: cryptoData, error: cryptoError } = useQuery({
-    queryKey: ['crypto-price', symbol],
+    queryKey: ['crypto-quote', symbol],
     queryFn: async () => {
       try {
-        const cryptoIdMap: Record<string, string> = {
-          'btc': 'bitcoin',
-          'eth': 'ethereum',
-          'usdt': 'tether',
-          'xrp': 'ripple',
-          'usdc': 'usd-coin',
-          'doge': 'dogecoin',
-          'ada': 'cardano',
-          'sol': 'solana',
-          'trx': 'tron',
-          'dot': 'polkadot',
-          'matic': 'polygon',
-          'ltc': 'litecoin',
-          'shib': 'shiba-inu',
-          'avax': 'avalanche',
-          'uni': 'uniswap',
-          'bch': 'bitcoin-cash',
-          'link': 'chainlink',
-          'atom': 'cosmos',
-          'etc': 'ethereum-classic',
-          'near': 'near',
-          'xlm': 'stellar',
-          'algo': 'algorand',
-          'vet': 'vechain',
-          'icp': 'internet-computer',
-          'fil': 'filecoin',
-          'ape': 'apecoin',
-          'hbar': 'hedera',
-          'mana': 'decentraland',
-          'sand': 'the-sandbox',
-          'xtz': 'tezos',
-          'theta': 'theta-token',
-          'egld': 'elrond',
-          'eos': 'eos',
-          'aave': 'aave',
-          'chz': 'chiliz',
-          'hnt': 'helium',
-          'flow': 'flow',
-          'axs': 'axie-infinity',
-          'zec': 'zcash',
-          'bld': 'agoric',
-          'gala': 'gala',
-          'crv': 'curve-dao-token',
-          'tusd': 'true-usd',
-          'kcs': 'kucoin-token',
-          'cake': 'pancakeswap',
-          'bsv': 'bitcoin-sv',
-          'ftt': 'ftx-token',
-          'btt': 'bittorrent',
-          'dash': 'dash',
-          'neo': 'neo',
-          'snx': 'synthetix-network-token',
-          'comp': 'compound',
-          'waves': 'waves',
-          'zil': 'zilliqa',
-          'xmr': 'monero',
-          'bat': 'basic-attention-token',
-          'enj': 'enjincoin',
-          'dcr': 'decred',
-          'lrc': 'loopring',
-          'yfi': 'yearn-finance',
-          '1inch': '1inch',
-          'hot': 'holotoken',
-          'celo': 'celo',
-          'rose': 'oasis-network',
-          'sc': 'siacoin',
-          'rvn': 'ravencoin',
-          'htr': 'hathor',
-          'kava': 'kava',
-          'gmt': 'stepn',
-          'audio': 'audius',
-          'ankr': 'ankr',
-          'sushi': 'sushi',
-          'one': 'harmony',
-          'gno': 'gnosis',
-          'jst': 'just',
-          'bal': 'balancer',
-          'lpt': 'livepeer',
-          'glm': 'golem',
-          'api3': 'api3',
-          'stx': 'blockstack',
-          'dydx': 'dydx',
-          'fxs': 'frax-share',
-          'cvx': 'convex-finance',
-          'twt': 'trust-wallet-token',
-          'flux': 'zelcash',
-          'mina': 'mina',
-          'gtc': 'gitcoin',
-          'luna': 'terra-luna',
-          'ust': 'terrausd',
-          'spell': 'spell-token',
-          'metis': 'metis-token',
-          'fx': 'function-x',
-          'rune': 'thorchain',
-          'scrt': 'secret',
-          'inj': 'injective-protocol',
-          'rpl': 'rocket-pool',
-          'juno': 'juno-network',
-          'ldo': 'lido-dao',
-          'gmx': 'gmx',
-          'woo': 'wootrade',
-          'pendle': 'pendle',
-          'magic': 'magic',
-          'rad': 'radicle',
-          'super': 'superfarm',
-          'syn': 'synapse-2',
-          'mult': 'multichain',
-          'pyr': 'vulcan-forged',
-          'alice': 'my-neighbor-alice',
-          'epx': 'ellipsis',
-          'mask': 'mask-network',
-          'slp': 'smooth-love-potion',
-          'chr': 'chromia',
-          'pundix': 'pundix',
-          'coti': 'coti',
-          'nexo': 'nexo',
-          'stg': 'stargate-finance',
-          'celr': 'celer-network',
-          'arpa': 'arpa-chain',
-          'ocean': 'ocean-protocol',
-          'skl': 'skale',
-          'agld': 'adventure-gold',
-          'dar': 'mines-of-dalarnia',
-          'jasmy': 'jasmycoin',
-          'ach': 'alchemy-pay',
-          'lqty': 'liquity',
-          'cvp': 'powerpool',
-          'perp': 'perpetual-protocol',
-          'badger': 'badger-dao',
-          'dfi': 'defichain',
-          'rly': 'rally-2',
-          'band': 'band-protocol',
-          'pols': 'polkastarter',
-          'tlm': 'alien-worlds',
-          'dnt': 'district0x',
-          'powr': 'power-ledger',
-          'req': 'request-network',
-          'rlc': 'iexec-rlc',
-          'cvc': 'civic',
-          'mkr': 'maker',
-          'srm': 'serum',
-          'knc': 'kyber-network-crystal',
-          'zrx': '0x',
-          'ren': 'republic-protocol',
-          'uma': 'uma',
-          'fet': 'fetch',
-          'oxt': 'orchid',
-          'nkn': 'nkn',
-          'storj': 'storj',
-          'bnt': 'bancor',
-          'nmr': 'numeraire',
-          'grt': 'the-graph',
-          'ftm': 'fantom'
-        };
-
+        // Only fetch crypto data if this is a cryptocurrency
+        if (!isCrypto) {
+          throw new Error('Not a cryptocurrency');
+        }
+        
         const cryptoId = cryptoIdMap[symbol?.toLowerCase() || ''] || symbol?.toLowerCase();
         
         const response = await axiosInstance.get(`/api/crypto/price?cryptoId=${cryptoId}`);
@@ -219,7 +229,7 @@ export default function AssetDetails() {
         throw error;
       }
     },
-    enabled: !!symbol,
+    enabled: !!symbol && isCrypto,
     refetchInterval: 60000,
   });
 
@@ -227,19 +237,25 @@ export default function AssetDetails() {
     queryKey: ['stock-quote', symbol],
     queryFn: async () => {
       try {
+        // Only fetch stock data if this is not a cryptocurrency
+        if (isCrypto) {
+          throw new Error('Not a stock');
+        }
+        
         const response = await axiosInstance.get(`/api/stocks/${symbol}/quote`);
         
-        if (!response.data || response.data.price === undefined) {
+        // Check if we have valid data in the response
+        if (!response.data || !response.data.data || response.data.data.price === undefined) {
           throw new Error('Invalid stock data');
         }
         
-        return response.data;
+        return response.data.data;
       } catch (error) {
         console.error('Error fetching stock data:', error);
         throw error;
       }
     },
-    enabled: !!symbol,
+    enabled: !!symbol && !isCrypto,
     refetchInterval: 60000,
   });
 
@@ -247,9 +263,9 @@ export default function AssetDetails() {
     queryKey: ['asset-history', symbol, timeRange],
     queryFn: async () => {
       try {
-        if (cryptoData) {
+        if (isCrypto) {
           const mockHistory = [];
-          const basePrice = cryptoData.current_price || 100;
+          const basePrice = cryptoData?.current_price || 100;
           
           let days = 30;
           let interval = 1;
@@ -305,10 +321,13 @@ export default function AssetDetails() {
           return mockHistory;
         }
         
+        // For stocks, fetch real history data
         const response = await axiosInstance.get(`/api/stocks/${symbol}/history`, {
           params: { range: timeRange },
         });
-        return response.data;
+        
+        // Return the history data from the response
+        return response.data.data?.history || [];
       } catch (error) {
         console.error('Error fetching history data:', error);
         const mockHistory = [];
