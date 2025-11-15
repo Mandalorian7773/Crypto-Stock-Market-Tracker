@@ -9,6 +9,7 @@ interface StoreState {
   setTheme: (theme: 'light' | 'dark') => void;
   addToWatchlist: (symbol: string) => void;
   removeFromWatchlist: (symbol: string) => void;
+  setWatchlist: (watchlist: string[]) => void; // Add this
 }
 
 export const useStore = create<StoreState>()(
@@ -29,6 +30,7 @@ export const useStore = create<StoreState>()(
         set((state) => ({
           watchlist: state.watchlist.filter((s) => s !== symbol),
         })),
+      setWatchlist: (watchlist) => set({ watchlist }), // Add this
     }),
     {
       name: 'market-tracker-storage',
