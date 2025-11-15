@@ -15,15 +15,26 @@ export default function Dashboard() {
     staleTime: 30000,
   });
 
-  const { data: stockData, isLoading: stockLoading } = useQuery({
+  const { data: stockData, isLoading: stockLoading, error: stockError } = useQuery({
     queryKey: ['popular-stocks'],
     queryFn: async () => {
-      const symbols = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'NVDA'];
-      const requests = symbols.map((symbol) =>
-        axiosInstance.get(`/api/stocks/${symbol}/quote`)
-      );
-      const responses = await Promise.all(requests);
-      return responses.map((r) => r.data);
+      try {
+        const symbols = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'NVDA'];
+        const requests = symbols.map((symbol) =>
+          axiosInstance.get(`/api/stocks/${symbol}/quote`)
+        );
+        const responses = await Promise.all(requests);
+        return responses.map((r) => {
+          if (r.data && r.data.data) {
+            return r.data.data;
+          }
+          console.error('Invalid stock data structure:', r.data);
+          return null;
+        }).filter(Boolean);
+      } catch (error) {
+        console.error('Error fetching stock data:', error);
+        throw error;
+      }
     },
     refetchInterval: 60000,
     staleTime: 30000,
@@ -100,6 +111,10 @@ export default function Dashboard() {
               Array.from({ length: 6 }).map((_, i) => (
                 <Skeleton key={i} className="h-[160px] glass" />
               ))
+            ) : stockError ? (
+              <div className="col-span-full text-center py-8">
+                <p className="text-red-500">Error loading stock data: {stockError.message}</p>
+              </div>
             ) : (
               stockData?.map((stock: any, index: number) => (
                 <motion.div key={stock.symbol || index} variants={item}>
