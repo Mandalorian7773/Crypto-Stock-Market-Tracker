@@ -109,19 +109,19 @@ async function getStockHistory(req, res, next) {
       price: parseFloat(values['4. close'])
     }));
     
-    // Apply range filtering
+    // Apply range filtering based on the range parameter
     let filteredHistory = [];
     switch (range) {
-      case '1d':
+      case '1D':
         filteredHistory = historyArray.slice(0, 2);
         break;
-      case '7d':
+      case '7D':
         filteredHistory = historyArray.slice(0, 7);
         break;
-      case '30d':
+      case '1M':
         filteredHistory = historyArray.slice(0, 30);
         break;
-      case '365d':
+      case '1Y':
         filteredHistory = historyArray.slice(0, 365);
         break;
       default:

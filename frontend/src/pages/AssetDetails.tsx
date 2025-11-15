@@ -330,9 +330,12 @@ export default function AssetDetails() {
         return response.data.data?.history || [];
       } catch (error) {
         console.error('Error fetching history data:', error);
+        // Provide mock data as fallback
         const mockHistory = [];
-        const basePrice = stockData?.price || 100;
-        for (let i = 30; i >= 0; i--) {
+        const basePrice = stockData?.price || cryptoData?.current_price || 100;
+        const days = timeRange === '1D' ? 1 : timeRange === '7D' ? 7 : timeRange === '1M' ? 30 : 365;
+        
+        for (let i = days; i >= 0; i--) {
           const date = new Date();
           date.setDate(date.getDate() - i);
           mockHistory.push({
@@ -348,7 +351,7 @@ export default function AssetDetails() {
 
   const data = cryptoData || stockData;
   const price = cryptoData?.current_price || stockData?.price || 0;
-  const change24h = cryptoData?.price_change_percentage_24h || stockData?.changePercent || 0;
+  const change24h = parseFloat(cryptoData?.price_change_percentage_24h || stockData?.changePercent || 0);
 
   const hasValidData = (cryptoData && cryptoData.current_price !== undefined) || 
                        (stockData && stockData.price !== undefined);
@@ -576,13 +579,14 @@ export default function AssetDetails() {
           <Card className="glass p-4 border-white/10">
             <p className="text-sm text-muted-foreground mb-1">24h Change</p>
             <p
-              className={`text-xl sm:text-2xl font-bold ${
+              className={`text-sm font-semibold ${
                 change24h >= 0 ? 'text-success' : 'text-destructive'
               }`}
             >
               {change24h >= 0 ? '+' : ''}
               {change24h.toFixed(2)}%
             </p>
+
           </Card>
           <Card className="glass p-4 border-white/10">
             <p className="text-sm text-muted-foreground mb-1">Market Cap</p>

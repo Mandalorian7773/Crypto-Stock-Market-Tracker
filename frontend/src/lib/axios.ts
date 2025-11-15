@@ -16,6 +16,7 @@ axiosInstance.interceptors.request.use((config) => {
   if (userId) {
     config.headers['x-user-id'] = userId;
   }
+  console.log('Making request to:', config.url, config.params);
   return config;
 });
 
@@ -24,6 +25,8 @@ axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
     console.error('API Error:', error.response?.data || error.message);
+    console.error('Request URL:', error.config?.url);
+    console.error('Request params:', error.config?.params);
     return Promise.reject(error);
   }
 );
