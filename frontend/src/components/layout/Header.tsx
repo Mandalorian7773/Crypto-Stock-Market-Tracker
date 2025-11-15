@@ -22,7 +22,9 @@ export const Header = () => {
   const { toast } = useToast();
   const userId = useStore((state) => state.userId);
   const setUserId = useStore((state) => state.setUserId);
-  const setWatchlist = useStore((state) => state.setWatchlist); // Add this
+  const setWatchlist = useStore((state) => state.setWatchlist);
+  const emailWatchlists = useStore((state) => state.emailWatchlists);
+  const setEmailWatchlists = useStore((state) => state.setEmailWatchlists);
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -114,10 +116,18 @@ export const Header = () => {
   };
 
   const handleSignOut = () => {
+    // Save current user's watchlist to emailWatchlists before signing out
+    if (userId && userId.includes('@')) {
+      setEmailWatchlists({
+        ...emailWatchlists,
+        [userId]: useStore.getState().watchlist
+      });
+    }
+    
     // Generate a new session ID when signing out
     const sessionId = `session_${Math.random().toString(36).substr(2, 9)}`;
     setUserId(sessionId);
-    setWatchlist([]); // Clear the watchlist on sign out
+    setWatchlist([]); // Clear the watchlist for anonymous user
     setAuthMode('signin');
     toast({ title: 'Signed out successfully' });
   };
